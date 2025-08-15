@@ -1,8 +1,12 @@
 import express from "express";
 import fetch from "node-fetch";
 import * as cheerio from "cheerio";
+import cors from "cors";
 
 const app = express();
+
+// aktifkan cors (semua origin diizinkan)
+app.use(cors());
 
 // Redirect dari / ke /api/anime
 app.get("/", (req, res) => {
@@ -30,8 +34,9 @@ app.get("/api/anime", async (req, res) => {
 
     res.json(data);
   } catch (err) {
-    res.status(500).json({ error: err.message });
+    res.status(500).json({ error: "Gagal scraping", detail: err.message });
   }
 });
 
-app.listen(3000, () => console.log("Server jalan di http://localhost:3000"));
+const PORT = process.env.PORT || 3000;
+app.listen(PORT, () => console.log(`Server jalan di http://localhost:${PORT}`));
