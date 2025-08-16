@@ -131,21 +131,36 @@ app.post("/api/anime/info", async (req, res) => {
     const { link } = req.body;
     if (!link) return res.status(400).json({ error: "Missing link" });
 
-    // Ambil HTML dari link
     const html = await fetch(link).then(r => r.text());
     const $ = cheerio.load(html);
 
-    // Ambil data detail anime
+    // Judul
     const judul = $(".jdlrx h1").text().trim();
-    const thumbnail = $(".fotoanime img").attr("src");
-    const sinopsis = $(".sinopc").text().trim();
 
+    // Thumbnail
+    const thumbnail = $(".fotoanime img").attr("src");
+
+    // Sinopsis
+    let sinopsis = "";
+    $(".sinopc p").each((_, el) => {
+      sinopsis += $(el).text().trim() + "\n";
+    });
+    sinopsis = sinopsis.trim();
+
+    // Episode List
     const episode = [];
-    $(".episodelist li").each((i, el) => {
-      episode.push({
-        title: $(el).find("a").text().trim(),
-        link: $(el).find("a").attr("href")
-      });
+    // Pilih hanya yang ada judul episode
+    $(".episodelist ul li").each((_, el) => {
+      const title = $(el).find("a").text().trim();
+      const linkEp = $(el).find("a").attr("href");
+      const tanggal = $(el).find(".zeebr").text().trim();
+      if (title && linkEp) {
+        episode.push({
+          title,
+          link: linkEp,
+          tanggal
+        });
+      }
     });
 
     res.json({ judul, thumbnail, sinopsis, episode });
