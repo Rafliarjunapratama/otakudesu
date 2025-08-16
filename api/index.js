@@ -41,6 +41,8 @@ app.get("/api/anime", async (req, res) => {
 });
 
 
+
+
 // API anime complete
 app.get("/api/anime/complete", async (req, res) => {
   try {
@@ -70,31 +72,33 @@ app.get("/api/anime/complete", async (req, res) => {
 // API jadwal anime// API Jadwal Anime
 app.get("/api/anime/jadwal", async (req, res) => {
   try {
-    const url = "https://otakudesu.best/jadwal-rilis/";
-    const html = await fetch(url).then(r => r.text());
-    const $ = cheerio.load(html);
+    const data = [];
+    const totalPages = 5; // jumlah halaman On-Going
 
-    const jadwal = {};
+    for (let page = 1; page <= totalPages; page++) {
+      const url = `https://otakudesu.best/ongoing-anime/page/${page}/`;
+      const html = await fetch(url).then(r => r.text());
+      const $ = cheerio.load(html);
 
-    $(".kglist321").each((i, el) => {
-      const hari = $(el).find("h2").text().trim();
-      const animeList = [];
-
-      $(el).find("ul li a").each((j, link) => {
-        animeList.push({
-          judul: $(link).text().trim(),
-          link: $(link).attr("href")
+      $("li .detpost").each((i, el) => {
+        data.push({
+          episode: $(el).find(".epz").text().trim(),
+          hari: $(el).find(".epztipe").text().trim(),
+          tanggal: $(el).find(".newnime").text().trim(),
+          link: $(el).find(".thumb a").attr("href"),
+          thumbnail: $(el).find(".thumb img").attr("src"),
+          judul: $(el).find(".thumb h2.jdlflm").text().trim(),
         });
       });
+    }
 
-      jadwal[hari] = animeList;
-    });
-
-    res.json(jadwal);
+    console.log(`Total anime scraped: ${data.length}`);
+    res.json(data);
   } catch (err) {
-    res.status(500).json({ error: "Gagal scraping jadwal anime", detail: err.message });
+    res.status(500).json({ error: "Gagal scraping", detail: err.message });
   }
 });
+
 
 const PORT = process.env.PORT || 3000;
 app.listen(PORT, () => console.log(`Server jalan di http://localhost:${PORT}`));
