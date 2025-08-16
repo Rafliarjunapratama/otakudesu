@@ -65,7 +65,7 @@ app.get("/api/anime/complete", async (req, res) => {
 // API jadwal anime
 app.get("/api/anime/jadwal", async (req, res) => {
   try {
-    const url = "https://otakudesu.best/jadwal-anime/";
+    const url = "https://otakudesu.best/jadwal-rilis/";
     const html = await fetch(url).then(r => r.text());
     const $ = cheerio.load(html);
 
