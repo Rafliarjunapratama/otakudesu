@@ -125,7 +125,7 @@ app.get("/api/anime/jadwal", async (req, res) => {
   }
 });
 
-p.post("/api/anime/info", (req, res) => {
+app.post("/api/anime/info", (req, res) => {
   const { link } = req.body;
   if (!link) return res.status(400).json({ error: "Missing link" });
 
