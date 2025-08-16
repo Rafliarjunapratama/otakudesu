@@ -125,30 +125,16 @@ app.get("/api/anime/jadwal", async (req, res) => {
   }
 });
 
-app.post("/api/anime/info", async (req, res) => {
-  try {
-    const { link } = req.body; // ambil link dari body JSON
-    if (!link) return res.status(400).json({ error: "Link wajib dikirim" });
+p.post("/api/anime-link", (req, res) => {
+  const { link } = req.body;
+  if (!link) return res.status(400).json({ error: "Missing link" });
 
-    const html = await fetch(link).then(r => r.text());
-    const $ = cheerio.load(html);
+  // Lakukan sesuatu dengan link, misal simpan atau log
+  console.log("Link diterima:", link);
 
-    // Contoh scraping data dari halaman anime
-    const data = {
-      judul: $("h1.entry-title").text().trim(),
-      thumbnail: $(".thumb img").attr("src"),
-      sinopsis: $(".entry-content p").first().text().trim(),
-      episode: $(".eps a").map((i, el) => ({
-        title: $(el).text().trim(),
-        link: $(el).attr("href")
-      })).get()
-    };
-
-    res.json(data);
-  } catch (err) {
-    res.status(500).json({ error: "Gagal scraping", detail: err.message });
-  }
+  res.json({ message: "Link received", link });
 });
+
 
 
 const PORT = process.env.PORT || 3000;
