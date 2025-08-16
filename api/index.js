@@ -13,28 +13,33 @@ app.get("/", (req, res) => {
 // API terbaru update
 app.get("/api/anime", async (req, res) => {
   try {
-    const url = "https://otakudesu.best/";
-    const html = await fetch(url).then(r => r.text());
-    const $ = cheerio.load(html);
-
     const data = [];
+    const totalPages = 5; // jumlah halaman On-Going
 
-    $("li .detpost").each((i, el) => {
-      data.push({
-        episode: $(el).find(".epz").text().trim(),
-        hari: $(el).find(".epztipe").text().trim(),
-        tanggal: $(el).find(".newnime").text().trim(),
-        link: $(el).find(".thumb a").attr("href"),
-        thumbnail: $(el).find(".thumb img").attr("src"),
-        judul: $(el).find(".thumb h2.jdlflm").text().trim(),
+    for (let page = 1; page <= totalPages; page++) {
+      const url = `https://otakudesu.best/ongoing-anime/page/${page}/`;
+      const html = await fetch(url).then(r => r.text());
+      const $ = cheerio.load(html);
+
+      $("li .detpost").each((i, el) => {
+        data.push({
+          episode: $(el).find(".epz").text().trim(),
+          hari: $(el).find(".epztipe").text().trim(),
+          tanggal: $(el).find(".newnime").text().trim(),
+          link: $(el).find(".thumb a").attr("href"),
+          thumbnail: $(el).find(".thumb img").attr("src"),
+          judul: $(el).find(".thumb h2.jdlflm").text().trim(),
+        });
       });
-    });
+    }
 
+    console.log(`Total anime scraped: ${data.length}`);
     res.json(data);
   } catch (err) {
     res.status(500).json({ error: "Gagal scraping", detail: err.message });
   }
 });
+
 
 // API anime complete
 app.get("/api/anime/complete", async (req, res) => {
