@@ -62,7 +62,7 @@ app.get("/api/anime/complete", async (req, res) => {
   }
 });
 
-// API jadwal anime
+// API jadwal anime// API Jadwal Anime
 app.get("/api/anime/jadwal", async (req, res) => {
   try {
     const url = "https://otakudesu.best/jadwal-rilis/";
@@ -71,18 +71,18 @@ app.get("/api/anime/jadwal", async (req, res) => {
 
     const jadwal = {};
 
-    $(".kgjdwl318").each((i, el) => {
+    $(".kglist321").each((i, el) => {
       const hari = $(el).find("h2").text().trim();
-      const listAnime = [];
+      const animeList = [];
 
-      $(el).find("li").each((j, item) => {
-        listAnime.push({
-          judul: $(item).find("a").text().trim(),
-          link: $(item).find("a").attr("href"),
+      $(el).find("ul li a").each((j, link) => {
+        animeList.push({
+          judul: $(link).text().trim(),
+          link: $(link).attr("href")
         });
       });
 
-      jadwal[hari] = listAnime;
+      jadwal[hari] = animeList;
     });
 
     res.json(jadwal);
