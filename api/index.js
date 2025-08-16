@@ -4,7 +4,6 @@ import * as cheerio from "cheerio";
 import cors from "cors";
 
 const app = express();
-
 app.use(cors());
 
 app.get("/", (req, res) => {
@@ -40,7 +39,7 @@ app.get("/api/anime", async (req, res) => {
 // API anime complete
 app.get("/api/anime/complete", async (req, res) => {
   try {
-    const url = "https://otakudesu.best/complete-anime/"; // halaman complete
+    const url = "https://otakudesu.best/complete-anime/";
     const html = await fetch(url).then(r => r.text());
     const $ = cheerio.load(html);
 
@@ -60,6 +59,35 @@ app.get("/api/anime/complete", async (req, res) => {
     res.json(data);
   } catch (err) {
     res.status(500).json({ error: "Gagal scraping complete anime", detail: err.message });
+  }
+});
+
+// API jadwal anime
+app.get("/api/anime/jadwal", async (req, res) => {
+  try {
+    const url = "https://otakudesu.best/jadwal-anime/";
+    const html = await fetch(url).then(r => r.text());
+    const $ = cheerio.load(html);
+
+    const jadwal = {};
+
+    $(".kgjdwl318").each((i, el) => {
+      const hari = $(el).find("h2").text().trim();
+      const listAnime = [];
+
+      $(el).find("li").each((j, item) => {
+        listAnime.push({
+          judul: $(item).find("a").text().trim(),
+          link: $(item).find("a").attr("href"),
+        });
+      });
+
+      jadwal[hari] = listAnime;
+    });
+
+    res.json(jadwal);
+  } catch (err) {
+    res.status(500).json({ error: "Gagal scraping jadwal anime", detail: err.message });
   }
 });
 
