@@ -102,7 +102,7 @@ app.get("/api/anime/jadwal", async (req, res) => {
 app.get("/api/anime/complete/all", async (req, res) => {
   try {
     const data = [];
-    const totalPages = 5; // jumlah halaman On-Going
+    const totalPages = 63; // jumlah halaman On-Going
 
     for (let page = 1; page <= totalPages; page++) {
       const url = `https://otakudesu.best/complete-anime/page/${page}/`;
