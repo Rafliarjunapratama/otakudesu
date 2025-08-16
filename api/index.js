@@ -129,11 +129,10 @@ app.post("/api/anime/info", (req, res) => {
   const { link } = req.body;
   if (!link) return res.status(400).json({ error: "Missing link" });
 
-  // Lakukan sesuatu dengan link, misal simpan atau log
   console.log("Link diterima:", link);
-
   res.json({ message: "Link received", link });
 });
+
 
 
 
