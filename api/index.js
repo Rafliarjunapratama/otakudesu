@@ -126,10 +126,21 @@ app.get("/api/anime/jadwal", async (req, res) => {
   }
 });
 
-app.post("/api/anime/info", async (req, res) => {
+import fetch from "node-fetch";
+import * as cheerio from "cheerio";
+
+export default async function handler(req, res) {
+  if (req.method !== "POST") {
+    res.status(405).json({ error: "Method Not Allowed" });
+    return;
+  }
+
   try {
     const { link } = req.body;
-    if (!link) return res.status(400).json({ error: "Missing link" });
+    if (!link) {
+      res.status(400).json({ error: "Missing link" });
+      return;
+    }
 
     const html = await fetch(link).then(r => r.text());
     const $ = cheerio.load(html);
@@ -149,7 +160,6 @@ app.post("/api/anime/info", async (req, res) => {
 
     // Episode List
     const episode = [];
-    // Pilih hanya yang ada judul episode
     $(".episodelist ul li").each((_, el) => {
       const title = $(el).find("a").text().trim();
       const linkEp = $(el).find("a").attr("href");
@@ -163,11 +173,11 @@ app.post("/api/anime/info", async (req, res) => {
       }
     });
 
-    res.json({ judul, thumbnail, sinopsis, episode });
+    res.status(200).json({ judul, thumbnail, sinopsis, episode });
   } catch (err) {
     res.status(500).json({ error: "Gagal scraping info anime", detail: err.message });
   }
-});
+}
 
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
