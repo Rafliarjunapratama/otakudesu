@@ -125,14 +125,33 @@ app.get("/api/anime/jadwal", async (req, res) => {
   }
 });
 
-app.post("/api/anime/info", (req, res) => {
-  const { link } = req.body;
-  if (!link) return res.status(400).json({ error: "Missing link" });
+app.post("/api/anime/info", async (req, res) => {
+  try {
+    const { link } = req.body;
+    if (!link) return res.status(400).json({ error: "Missing link" });
 
-  console.log("Link diterima:", link);
-  res.json({ message: "Link received", link });
+    // Ambil HTML dari link
+    const html = await fetch(link).then(r => r.text());
+    const $ = cheerio.load(html);
+
+    // Ambil data detail anime
+    const judul = $(".jdlrx h1").text().trim();
+    const thumbnail = $(".fotoanime img").attr("src");
+    const sinopsis = $(".sinopc").text().trim();
+
+    const episode = [];
+    $(".episodelist li").each((i, el) => {
+      episode.push({
+        title: $(el).find("a").text().trim(),
+        link: $(el).find("a").attr("href")
+      });
+    });
+
+    res.json({ judul, thumbnail, sinopsis, episode });
+  } catch (err) {
+    res.status(500).json({ error: "Gagal scraping info anime", detail: err.message });
+  }
 });
-
 
 
 
