@@ -153,6 +153,9 @@ app.post("/api/anime/info", async (req, res) => {
   }
 });
 
+app.use(express.json());
+app.use(express.urlencoded({ extended: true }));
+
 
 
 const PORT = process.env.PORT || 3000;
