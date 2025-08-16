@@ -124,31 +124,17 @@ app.get("/api/anime/jadwal", async (req, res) => {
     res.status(500).json({ error: "Gagal scraping", detail: err.message });
   }
 });
-
-app.post("/api/anime/infolanjut", async (req, res) => {
-  try {
-    const { link } = req.body; // ambil link dari body JSON
-    if (!link) return res.status(400).json({ error: "Link wajib dikirim" });
-
-    const html = await fetch(link).then(r => r.text());
-    const $ = cheerio.load(html);
-
-    // Contoh scraping data dari halaman anime
-    const data = {
-      judul: $("h1.entry-title").text().trim(),
-      thumbnail: $(".thumb img").attr("src"),
-      sinopsis: $(".entry-content p").first().text().trim(),
-      episode: $(".eps a").map((i, el) => ({
+const data = {
+  judul: $("h1.entry-title").text().trim(),
+  thumbnail: $(".thumb img").attr("src"),
+  sinopsis: $(".entry-content p").first().text().trim(),
+  episode: $(".eps a").length
+    ? $(".eps a").map((i, el) => ({
         title: $(el).text().trim(),
-        link: $(el).attr("href")
+        link: $(el).attr("href"),
       })).get()
-    };
-
-    res.json(data);
-  } catch (err) {
-    res.status(500).json({ error: "Gagal scraping", detail: err.message });
-  }
-});
+    : [], // pastikan selalu array
+};
 
 
 const PORT = process.env.PORT || 3000;
