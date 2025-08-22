@@ -106,13 +106,13 @@ import * as cheerio from "cheerio";
 const app = express();
 
 // GET detail anime dengan encoded URL
-app.get("/api/anime/detail/:link", async (req, res) => {
+
+app.get("/api/anime/detail", async (req, res) => {
   try {
-    // decode link
-    const link = decodeURIComponent(req.params.link);
+    const link = req.query.url;
 
     if (!link) {
-      return res.status(400).json({ error: "Missing link" });
+      return res.status(400).json({ error: "Missing url query" });
     }
 
     const html = await fetch(link).then(r => r.text());
@@ -121,7 +121,7 @@ app.get("/api/anime/detail/:link", async (req, res) => {
     // Thumbnail
     const thumbnail = $(".fotoanime img").attr("src");
 
-    // Info (Judul, Japanese, Produser, dll)
+    // Info
     const info = {};
     $(".infozin .infozingle p").each((_, el) => {
       const label = $(el).find("b").text().replace(":", "").trim();
