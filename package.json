@@ -1,10 +1,10 @@
 {
   "name": "otakudesu",
   "version": "1.0.0",
-  "main": "index.js",
+  "main": "api/index.js",
   "type": "module",
   "scripts": {
-    "start": "node index.js"
+    "start": "node api/index.js"
   },
   "dependencies": {
     "cheerio": "^1.0.0",
