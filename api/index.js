@@ -90,23 +90,7 @@ app.get("/api/anime/complete/page/:page", async (req, res) => {
   }
 });
 
-// API Detail Anime
-// GET untuk default (biar tidak error kalau dibuka di browser)
-app.get("/api/anime/detail", (req, res) => {
-  res.json({
-    message: "Gunakan POST method dengan body { link: 'url_anime' } untuk mendapatkan detail anime."
-  });
-});
-
-// POST untuk ambil detail anime
-import express from "express";
-import fetch from "node-fetch";
-import * as cheerio from "cheerio";
-
-const app = express();
-
-// GET detail anime dengan encoded URL
-
+// API Detail Anime (pakai query ?url=...)
 app.get("/api/anime/detail", async (req, res) => {
   try {
     const link = req.query.url;
@@ -118,10 +102,8 @@ app.get("/api/anime/detail", async (req, res) => {
     const html = await fetch(link).then(r => r.text());
     const $ = cheerio.load(html);
 
-    // Thumbnail
     const thumbnail = $(".fotoanime img").attr("src");
 
-    // Info
     const info = {};
     $(".infozin .infozingle p").each((_, el) => {
       const label = $(el).find("b").text().replace(":", "").trim();
@@ -129,20 +111,17 @@ app.get("/api/anime/detail", async (req, res) => {
       if (label) info[label] = value;
     });
 
-    // Genre
     info["Genre"] = [];
     $(".infozin .infozingle p").find("a").each((_, el) => {
       info["Genre"].push($(el).text().trim());
     });
 
-    // Sinopsis
     let sinopsis = "";
     $(".sinopc p").each((_, el) => {
       sinopsis += $(el).text().trim() + "\n";
     });
     sinopsis = sinopsis.trim();
 
-    // Episode List
     const episodes = [];
     $(".episodelist ul li").each((_, el) => {
       const title = $(el).find("a").text().trim();
@@ -162,9 +141,6 @@ app.get("/api/anime/detail", async (req, res) => {
     res.status(500).json({ error: "Gagal scraping detail anime", detail: err.message });
   }
 });
-
-
-
 
 const PORT = process.env.PORT || 3000;
 app.listen(PORT, () => console.log(`Server jalan di http://localhost:${PORT}`));
