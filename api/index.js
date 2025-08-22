@@ -91,6 +91,14 @@ app.get("/api/anime/complete/page/:page", async (req, res) => {
 });
 
 // API Detail Anime
+// GET untuk default (biar tidak error kalau dibuka di browser)
+app.get("/api/anime/detail", (req, res) => {
+  res.json({
+    message: "Gunakan POST method dengan body { link: 'url_anime' } untuk mendapatkan detail anime."
+  });
+});
+
+// POST untuk ambil detail anime
 app.post("/api/anime/detail", async (req, res) => {
   try {
     const { link } = req.body;
@@ -112,7 +120,7 @@ app.post("/api/anime/detail", async (req, res) => {
       if (label) info[label] = value;
     });
 
-    // Genre (khusus karena ada <a>)
+    // Genre
     info["Genre"] = [];
     $(".infozin .infozingle p").find("a").each((_, el) => {
       info["Genre"].push($(el).text().trim());
@@ -145,6 +153,7 @@ app.post("/api/anime/detail", async (req, res) => {
     res.status(500).json({ error: "Gagal scraping detail anime", detail: err.message });
   }
 });
+
 
 
 
