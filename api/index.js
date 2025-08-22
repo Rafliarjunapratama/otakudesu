@@ -91,71 +91,24 @@ app.get("/api/anime/complete/page/:page", async (req, res) => {
 });
 
 // API Detail Anime (pakai query ?url=...)
+const proxy = "https://api.allorigins.win/raw?url=";
+
 app.get("/api/anime/detail", async (req, res) => {
   try {
     const link = req.query.url;
+    if (!link) return res.status(400).json({ error: "Missing url query" });
 
-    if (!link) {
-      return res.status(400).json({ error: "Missing url query" });
-    }
-
-    // Fetch pakai User-Agent biar nggak dianggap bot
-    const html = await fetch(link, {
-      headers: {
-        "User-Agent":
-          "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36",
-        "Accept": "text/html,application/xhtml+xml",
-      },
-    }).then((r) => r.text());
-
-    // Debugging di log vercel
-    console.log("Fetching:", link);
-    console.log("HTML snippet:", html.slice(0, 300));
+    const response = await fetch(proxy + encodeURIComponent(link));
+    const html = await response.text();
 
     const $ = cheerio.load(html);
 
-    const thumbnail = $(".fotoanime img").attr("src");
-
-    const info = {};
-    $(".infozin .infozingle p").each((_, el) => {
-      const label = $(el).find("b").text().replace(":", "").trim();
-      const value = $(el).text().replace(label + ":", "").trim();
-      if (label) info[label] = value;
-    });
-
-    info["Genre"] = [];
-    $(".infozin .infozingle p").find("a").each((_, el) => {
-      info["Genre"].push($(el).text().trim());
-    });
-
-    let sinopsis = "";
-    $(".sinopc p").each((_, el) => {
-      sinopsis += $(el).text().trim() + "\n";
-    });
-    sinopsis = sinopsis.trim();
-
-    const episodes = [];
-    $(".episodelist ul li").each((_, el) => {
-      const title = $(el).find("a").text().trim();
-      const linkEp = $(el).find("a").attr("href");
-      const tanggal = $(el).find(".zeebr").text().trim();
-      episodes.push({ title, link: linkEp, tanggal });
-    });
-
-    res.json({
-      thumbnail,
-      info,
-      sinopsis,
-      episodes,
-    });
+    // lanjut parsing cheerio kaya biasa...
   } catch (err) {
-    console.error("Scraping error:", err.message);
-    res.status(500).json({
-      error: "Gagal scraping detail anime",
-      detail: err.message,
-    });
+    res.status(500).json({ error: "Scraping gagal", detail: err.message });
   }
 });
+
 
 const PORT = process.env.PORT || 3000;
 app.listen(PORT, () => console.log(`Server jalan di http://localhost:${PORT}`));
