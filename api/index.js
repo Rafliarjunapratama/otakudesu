@@ -99,9 +99,18 @@ app.get("/api/anime/detail", (req, res) => {
 });
 
 // POST untuk ambil detail anime
-app.post("/api/anime/detail", async (req, res) => {
+import express from "express";
+import fetch from "node-fetch";
+import * as cheerio from "cheerio";
+
+const app = express();
+
+// GET detail anime dengan encoded URL
+app.get("/api/anime/detail/:link", async (req, res) => {
   try {
-    const { link } = req.body;
+    // decode link
+    const link = decodeURIComponent(req.params.link);
+
     if (!link) {
       return res.status(400).json({ error: "Missing link" });
     }
