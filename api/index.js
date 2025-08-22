@@ -99,7 +99,19 @@ app.get("/api/anime/detail", async (req, res) => {
       return res.status(400).json({ error: "Missing url query" });
     }
 
-    const html = await fetch(link).then(r => r.text());
+    // Fetch pakai User-Agent biar nggak dianggap bot
+    const html = await fetch(link, {
+      headers: {
+        "User-Agent":
+          "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36",
+        "Accept": "text/html,application/xhtml+xml",
+      },
+    }).then((r) => r.text());
+
+    // Debugging di log vercel
+    console.log("Fetching:", link);
+    console.log("HTML snippet:", html.slice(0, 300));
+
     const $ = cheerio.load(html);
 
     const thumbnail = $(".fotoanime img").attr("src");
@@ -134,11 +146,14 @@ app.get("/api/anime/detail", async (req, res) => {
       thumbnail,
       info,
       sinopsis,
-      episodes
+      episodes,
     });
-
   } catch (err) {
-    res.status(500).json({ error: "Gagal scraping detail anime", detail: err.message });
+    console.error("Scraping error:", err.message);
+    res.status(500).json({
+      error: "Gagal scraping detail anime",
+      detail: err.message,
+    });
   }
 });
 
