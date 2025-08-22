@@ -106,53 +106,47 @@ app.get("/api/anime/complete/page/:page", async (req, res) => {
 
 
 app.get("/api/anime/detail", async (req, res) => {
-  try {
-    const link = req.query.url;
-    if (!link) return res.status(400).json({ error: "Missing url query" });
+  const url = req.query.url;
+  if (!url) return res.json({ error: "Missing url" });
 
-    const response = await gotScraping({
-      url: link,
+  try {
+    const response = await fetch(url, {
       headers: {
         "User-Agent":
-          "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/114.0.0.0 Safari/537.36",
-        "Referer": "https://otakudesu.cloud/",
+          "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/119.0.0.0 Safari/537.36",
       },
     });
 
-    const html = response.body;
+    const html = await response.text();
     const $ = cheerio.load(html);
 
-    const thumbnail = $(".attachment-post-thumbnail img").attr("src");
-
+    // ✅ Info anime
     const info = {};
-    $(".infozin .infozingle p").each((_, el) => {
-      const label = $(el).find("b").text().replace(":", "").trim();
-      const value = $(el).text().replace(label + ":", "").trim();
-      if (label) info[label] = value;
+    $(".infozingle p").each((i, el) => {
+      const text = $(el).text().trim();
+      const [key, ...val] = text.split(":");
+      info[key.trim()] = val.join(":").trim();
     });
 
-    info["Genre"] = [];
-    $(".infozin .infozingle p").find("a").each((_, el) => {
-      info["Genre"].push($(el).text().trim());
-    });
+    // ✅ Sinopsis
+    const sinopsis = $(".sinopc").text().trim();
 
-    let sinopsis = "";
-    $(".sinopc p").each((_, el) => {
-      sinopsis += $(el).text().trim() + "\n";
-    });
-    sinopsis = sinopsis.trim();
-
+    // ✅ Episodes
     const episodes = [];
-    $(".episodelist ul li").each((_, el) => {
+    $(".episodelist ul li").each((i, el) => {
       const title = $(el).find("a").text().trim();
-      const linkEp = $(el).find("a").attr("href");
-      const tanggal = $(el).find(".zeebr").text().trim();
-      episodes.push({ title, link: linkEp, tanggal });
+      const link = $(el).find("a").attr("href");
+      const date = $(el).find(".zeebr").text().trim();
+      episodes.push({ title, link, date });
     });
 
-    res.json({ thumbnail, info, sinopsis, episodes });
+    res.json({
+      info,
+      sinopsis,
+      episodes,
+    });
   } catch (err) {
-    res.status(500).json({
+    res.json({
       error: "Gagal scraping detail anime",
       detail: err.message,
     });
