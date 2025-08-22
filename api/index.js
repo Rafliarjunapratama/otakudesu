@@ -122,7 +122,7 @@ app.get("/api/anime/detail", async (req, res) => {
     const html = response.body;
     const $ = cheerio.load(html);
 
-    const thumbnail = $(".fotoanime img").attr("src");
+    const thumbnail = $(".attachment-post-thumbnail img").attr("src");
 
     const info = {};
     $(".infozin .infozingle p").each((_, el) => {
