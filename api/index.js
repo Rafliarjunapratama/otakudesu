@@ -64,14 +64,13 @@ app.get("/api/anime/complete", async (req, res) => {
     res.status(500).json({ error: "Gagal scraping complete anime", detail: err.message });
   }
 });
-// API Detail Anime (pakai query ?url=...)
+// API Detail Anime
 app.get("/api/anime/detail", async (req, res) => {
   try {
     const link = req.query.url;
     if (!link) return res.status(400).json({ error: "Missing url query" });
 
-    const response = await gotScraping({
-      url: link,
+    const response = await fetch(link, {
       headers: {
         "User-Agent":
           "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/114.0.0.0 Safari/537.36",
@@ -82,7 +81,8 @@ app.get("/api/anime/detail", async (req, res) => {
       },
     });
 
-    const html = response.body;
+    if (!response.ok) throw new Error(`Fetch gagal, status ${response.status}`);
+    const html = await response.text();
     const $ = cheerio.load(html);
 
     const thumbnail = $(".fotoanime img").attr("src");
@@ -115,7 +115,10 @@ app.get("/api/anime/detail", async (req, res) => {
 
     res.json({ thumbnail, info, sinopsis, episodes });
   } catch (err) {
-    res.status(500).json({ error: "Gagal scraping detail anime", detail: err.message });
+    res.status(500).json({
+      error: "Gagal scraping detail anime",
+      detail: err.message,
+    });
   }
 });
 
@@ -124,7 +127,16 @@ app.get("/api/anime/complete/page/:page", async (req, res) => {
   try {
     const page = req.params.page;
     const url = `https://otakudesu.best/complete-anime/page/${page}/`;
-    const html = await fetch(url).then(r => r.text());
+
+    const response = await fetch(url, {
+      headers: {
+        "User-Agent":
+          "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/114.0.0.0 Safari/537.36",
+      },
+    });
+    if (!response.ok) throw new Error(`Fetch gagal, status ${response.status}`);
+
+    const html = await response.text();
     const $ = cheerio.load(html);
 
     const data = [];
@@ -141,10 +153,12 @@ app.get("/api/anime/complete/page/:page", async (req, res) => {
 
     res.json(data);
   } catch (err) {
-    res.status(500).json({ error: "Gagal scraping complete anime", detail: err.message });
+    res.status(500).json({
+      error: "Gagal scraping complete anime",
+      detail: err.message,
+    });
   }
 });
-
 
 
 
