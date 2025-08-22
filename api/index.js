@@ -65,9 +65,6 @@ app.get("/api/anime/complete", async (req, res) => {
   }
 });
 
-// API Complete by Page
-import { gotScraping } from "got-scraping";
-
 // API Detail Anime (pakai query ?url=...)
 app.get("/api/anime/detail", async (req, res) => {
   try {
