@@ -101,28 +101,48 @@ app.post("/api/anime/detail", async (req, res) => {
     const html = await fetch(link).then(r => r.text());
     const $ = cheerio.load(html);
 
-    const judul = $(".jdlrx h1").text().trim();
+    // Thumbnail
     const thumbnail = $(".fotoanime img").attr("src");
 
+    // Info (Judul, Japanese, Produser, dll)
+    const info = {};
+    $(".infozin .infozingle p").each((_, el) => {
+      const label = $(el).find("b").text().replace(":", "").trim();
+      const value = $(el).text().replace(label + ":", "").trim();
+      if (label) info[label] = value;
+    });
+
+    // Genre (khusus karena ada <a>)
+    info["Genre"] = [];
+    $(".infozin .infozingle p").find("a").each((_, el) => {
+      info["Genre"].push($(el).text().trim());
+    });
+
+    // Sinopsis
     let sinopsis = "";
     $(".sinopc p").each((_, el) => {
       sinopsis += $(el).text().trim() + "\n";
     });
     sinopsis = sinopsis.trim();
 
-    const episode = [];
+    // Episode List
+    const episodes = [];
     $(".episodelist ul li").each((_, el) => {
       const title = $(el).find("a").text().trim();
       const linkEp = $(el).find("a").attr("href");
       const tanggal = $(el).find(".zeebr").text().trim();
-      if (title && linkEp) {
-        episode.push({ title, link: linkEp, tanggal });
-      }
+      episodes.push({ title, link: linkEp, tanggal });
     });
 
-    res.json({ judul, thumbnail, sinopsis, episode });
+    res.json({
+      thumbnail,
+      info,
+      sinopsis,
+      episodes
+    });
+
   } catch (err) {
-    res.status(500).json({ error: "Gagal scraping info anime", detail: err.message });
+    res.status(500).json({ error: "Gagal scraping detail anime", detail: err.message });
   }
 });
 
