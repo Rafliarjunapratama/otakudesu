@@ -2,6 +2,7 @@ import express from "express";
 import fetch from "node-fetch";
 import * as cheerio from "cheerio";
 import cors from "cors";
+import { gotScraping } from "got-scraping";
 
 const app = express();
 app.use(cors());
@@ -65,32 +66,8 @@ app.get("/api/anime/complete", async (req, res) => {
 });
 
 // API Complete by Page
-app.get("/api/anime/complete/page/:page", async (req, res) => {
-  try {
-    const page = req.params.page;
-    const url = `https://otakudesu.best/complete-anime/page/${page}/`;
-    const html = await fetch(url).then(r => r.text());
-    const $ = cheerio.load(html);
+import { gotScraping } from "got-scraping";
 
-    const data = [];
-    $("li .detpost").each((i, el) => {
-      data.push({
-        episode: $(el).find(".epz").text().trim(),
-        hari: $(el).find(".epztipe").text().trim(),
-        tanggal: $(el).find(".newnime").text().trim(),
-        link: $(el).find(".thumb a").attr("href"),
-        thumbnail: $(el).find(".thumb img").attr("src"),
-        judul: $(el).find(".thumb h2.jdlflm").text().trim(),
-      });
-    });
-
-    res.json(data);
-  } catch (err) {
-    res.status(500).json({ error: "Gagal scraping complete anime", detail: err.message });
-  }
-});
-
-// API Detail Anime (pakai query ?url=...)
 // API Detail Anime (pakai query ?url=...)
 app.get("/api/anime/detail", async (req, res) => {
   try {
@@ -100,19 +77,23 @@ app.get("/api/anime/detail", async (req, res) => {
       return res.status(400).json({ error: "Missing url query" });
     }
 
-    const html = await fetch(link).then(r => r.text());
+    const response = await gotScraping({
+      url: link,
+      headers: {
+        "User-Agent":
+          "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/114.0.0.0 Safari/537.36",
+        "Accept":
+          "text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8",
+        "Accept-Language": "en-US,en;q=0.9",
+        "Referer": "https://otakudesu.best/",
+      },
+    });
+
+    const html = response.body;
     const $ = cheerio.load(html);
 
-    // Hapus iklan supaya gak kebaca
-    $(".box_item_ads_popup").remove();
+    const thumbnail = $(".fotoanime img").attr("src");
 
-    // Judul utama
-    const title = $(".jdlrx").text().trim() || $("title").text().trim();
-
-    // Thumbnail
-    const thumbnail = $(".fotoanime img").attr("src") || null;
-
-    // Info anime
     const info = {};
     $(".infozin .infozingle p").each((_, el) => {
       const label = $(el).find("b").text().replace(":", "").trim();
@@ -120,53 +101,35 @@ app.get("/api/anime/detail", async (req, res) => {
       if (label) info[label] = value;
     });
 
-    // Genre (array)
     info["Genre"] = [];
     $(".infozin .infozingle p").find("a").each((_, el) => {
       info["Genre"].push($(el).text().trim());
     });
 
-    // Sinopsis
     let sinopsis = "";
     $(".sinopc p").each((_, el) => {
       sinopsis += $(el).text().trim() + "\n";
     });
     sinopsis = sinopsis.trim();
 
-    // Daftar episode
     const episodes = [];
     $(".episodelist ul li").each((_, el) => {
       const title = $(el).find("a").text().trim();
       const linkEp = $(el).find("a").attr("href");
       const tanggal = $(el).find(".zeebr").text().trim();
-      if (title && linkEp) {
-        episodes.push({ title, link: linkEp, tanggal });
-      }
-    });
-
-    // Pagination (jika ada halaman banyak)
-    const pagination = [];
-    $(".episodelist .pagination a").each((_, el) => {
-      pagination.push({
-        page: $(el).text().trim(),
-        link: $(el).attr("href"),
-      });
+      episodes.push({ title, link: linkEp, tanggal });
     });
 
     res.json({
-      title,
       thumbnail,
       info,
       sinopsis,
       episodes,
-      pagination,
     });
-
   } catch (err) {
-    res.status(500).json({
-      error: "Gagal scraping detail anime",
-      detail: err.message,
-    });
+    res
+      .status(500)
+      .json({ error: "Gagal scraping detail anime", detail: err.message });
   }
 });
 
