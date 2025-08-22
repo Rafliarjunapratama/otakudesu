@@ -64,16 +64,11 @@ app.get("/api/anime/complete", async (req, res) => {
     res.status(500).json({ error: "Gagal scraping complete anime", detail: err.message });
   }
 });
-
-<<<<<<< HEAD
 // API Detail Anime (pakai query ?url=...)
 app.get("/api/anime/detail", async (req, res) => {
   try {
     const link = req.query.url;
-
-    if (!link) {
-      return res.status(400).json({ error: "Missing url query" });
-    }
+    if (!link) return res.status(400).json({ error: "Missing url query" });
 
     const response = await gotScraping({
       url: link,
@@ -118,17 +113,12 @@ app.get("/api/anime/detail", async (req, res) => {
       episodes.push({ title, link: linkEp, tanggal });
     });
 
-    res.json({
-      thumbnail,
-      info,
-      sinopsis,
-      episodes,
-    });
+    res.json({ thumbnail, info, sinopsis, episodes });
   } catch (err) {
-    res
-      .status(500)
-      .json({ error: "Gagal scraping detail anime", detail: err.message });
-=======
+    res.status(500).json({ error: "Gagal scraping detail anime", detail: err.message });
+  }
+});
+
 // API Complete by Page
 app.get("/api/anime/complete/page/:page", async (req, res) => {
   try {
@@ -152,9 +142,9 @@ app.get("/api/anime/complete/page/:page", async (req, res) => {
     res.json(data);
   } catch (err) {
     res.status(500).json({ error: "Gagal scraping complete anime", detail: err.message });
->>>>>>> 9131a53 (index.js)
   }
 });
+
 
 
 
