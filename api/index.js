@@ -110,25 +110,16 @@ app.get("/api/anime/detail", async (req, res) => {
     const link = req.query.url;
     if (!link) return res.status(400).json({ error: "Missing url query" });
 
-    const response = await fetch(link, {
+    const response = await gotScraping({
+      url: link,
       headers: {
         "User-Agent":
           "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/114.0.0.0 Safari/537.36",
-        "Accept":
-          "text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8",
-        "Accept-Language": "en-US,en;q=0.9",
-        "Referer": "https://otakudesu.best/",
+        "Referer": "https://otakudesu.cloud/",
       },
     });
 
-    if (!response.ok) {
-      return res.status(response.status).json({
-        error: "Fetch gagal",
-        detail: `Status ${response.status}`,
-      });
-    }
-
-    const html = await response.text();
+    const html = response.body;
     const $ = cheerio.load(html);
 
     const thumbnail = $(".fotoanime img").attr("src");
