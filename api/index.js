@@ -91,40 +91,7 @@ app.get("/api/anime/complete/page/:page", async (req, res) => {
 });
 
 // API Detail Anime
-app.post("/api/anime/detail", async (req, res) => {
-  try {
-    const { link } = req.body;
-    if (!link) {
-      return res.status(400).json({ error: "Missing link" });
-    }
 
-    const html = await fetch(link).then(r => r.text());
-    const $ = cheerio.load(html);
-
-    const judul = $(".jdlrx h1").text().trim();
-    const thumbnail = $(".fotoanime img").attr("src");
-
-    let sinopsis = "";
-    $(".sinopc p").each((_, el) => {
-      sinopsis += $(el).text().trim() + "\n";
-    });
-    sinopsis = sinopsis.trim();
-
-    const episode = [];
-    $(".episodelist ul li").each((_, el) => {
-      const title = $(el).find("a").text().trim();
-      const linkEp = $(el).find("a").attr("href");
-      const tanggal = $(el).find(".zeebr").text().trim();
-      if (title && linkEp) {
-        episode.push({ title, link: linkEp, tanggal });
-      }
-    });
-
-    res.json({ judul, thumbnail, sinopsis, episode });
-  } catch (err) {
-    res.status(500).json({ error: "Gagal scraping info anime", detail: err.message });
-  }
-});
 
 const PORT = process.env.PORT || 3000;
 app.listen(PORT, () => console.log(`Server jalan di http://localhost:${PORT}`));
