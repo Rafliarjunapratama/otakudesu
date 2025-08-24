@@ -104,70 +104,19 @@ app.get("/api/anime/complete/page/:page", async (req, res) => {
   }
 });
 
-app.get("/api/anime/detail", async (req, res) => {
-  try {
-    const { link } = req.query;
-    if (!link) {
-      return res.status(400).json({ error: "Missing link" });
-    }
+// Ambil thumbnail
+let thumbnail = $(".thumb img").attr("srcset") || $(".thumb img").attr("src");
 
-    const response = await fetch(link);
-    const body = await response.text();
-    const $ = cheerio.load(body);
-
-    // Ambil judul
-    const judul = $(".jdlrx").text().trim();
-
-    // Ambil thumbnail (fix ambil original)
-    let thumbnail = $(".thumb img").attr("src") || $(".thumb img").attr("data-src");
-    if (thumbnail) {
-      thumbnail = thumbnail
-        .replace(/-\d+x\d+(?=\.(jpg|png|jpeg))/i, ""); // hapus suffix ukuran (misal -212x300)
-    }
-
-    // Sinopsis
-    const sinopsis = $(".sinopc").text().trim();
-
-    // Info tambahan
-    const episode = $(".infozingle p:contains('Episode')")
-      .text()
-      .replace("Episode:", "")
-      .trim();
-    const hari = $(".infozingle p:contains('Hari')")
-      .text()
-      .replace("Hari:", "")
-      .trim();
-    const tanggal = $(".infozingle p:contains('Tanggal')")
-      .text()
-      .replace("Tanggal:", "")
-      .trim();
-
-    // Daftar episode
-    const episodeList = [];
-    $(".episodelist ul li").each((i, el) => {
-      const title = $(el).find("a").text().trim();
-      const tanggal = $(el).find(".zeebr").text().trim();
-      const linkEp = $(el).find("a").attr("href");
-      episodeList.push({ title, tanggal, link: linkEp });
-    });
-
-    res.json({
-      judul,
-      thumbnail,
-      sinopsis,
-      episode: episodeList,
-      info: {
-        episode,
-        hari,
-        tanggal,
-        link,
-      },
-    });
-  } catch (err) {
-    console.error("Scraping error:", err);
-    res.status(500).json({ error: "Gagal mengambil data anime" });
+if (thumbnail) {
+  // kalau srcset → ambil gambar resolusi terbesar
+  if (thumbnail.includes(",")) {
+    thumbnail = thumbnail.split(",").map(x => x.trim().split(" ")[0]).pop();
   }
-});
+  // kalau masih relatif (misal "/wp-content/...") tambahin domain
+  if (thumbnail.startsWith("/")) {
+    thumbnail = "https://otakudesu.best" + thumbnail;
+  }
+}
 
 
 
