@@ -115,16 +115,15 @@ app.get("/api/anime/detail", async (req, res) => {
     const body = await response.text();
     const $ = cheerio.load(body);
 
-    // Ambil judul & thumbnail
+    // Ambil judul
     const judul = $(".jdlrx").text().trim();
-    let thumbnail = $(".thumb img").attr("srcset");
-if (thumbnail) {
-  // ambil resolusi terbesar dari srcset (biasanya yang terakhir)
-  thumbnail = thumbnail.split(",").map(x => x.trim().split(" ")[0]).pop();
-} else {
-  // fallback ke src biasa
-  thumbnail = $(".thumb img").attr("src");
-}
+
+    // Ambil thumbnail (fix ambil original)
+    let thumbnail = $(".thumb img").attr("src") || $(".thumb img").attr("data-src");
+    if (thumbnail) {
+      thumbnail = thumbnail
+        .replace(/-\d+x\d+(?=\.(jpg|png|jpeg))/i, ""); // hapus suffix ukuran (misal -212x300)
+    }
 
     // Sinopsis
     const sinopsis = $(".sinopc").text().trim();
@@ -169,6 +168,7 @@ if (thumbnail) {
     res.status(500).json({ error: "Gagal mengambil data anime" });
   }
 });
+
 
 
 
