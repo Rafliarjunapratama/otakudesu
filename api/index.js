@@ -181,43 +181,17 @@ app.get("/api/anime/detail", async (req, res) => {
 
 
 //api zeochan web
+//api zeochan web
 app.get("/api/zerochan/search", async (req, res) => {
   const query = req.query.q || "anime";
   const url = `https://www.zerochan.net/search?q=${encodeURIComponent(query)}`;
 
   try {
-    const browser = await puppeteer.launch({ headless: true });
-    const page = await browser.newPage();
-
-    await page.setUserAgent(
-      "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/119.0.0.0 Safari/537.36"
-    );
-    await page.goto(url, { waitUntil: "networkidle2" });
-
-    const data = await page.evaluate(() => {
-      return Array.from(document.querySelectorAll("#thumbs2 li")).map((el) => {
-        const titleEl = el.querySelector("p a");
-        const imgEl = el.querySelector(".thumb img");
-        const favEl = el.querySelector(".fav b");
-
-        const title = titleEl?.innerText.trim() || "";
-        const link = titleEl ? "https://www.zerochan.net" + titleEl.getAttribute("href") : "";
-        const thumbnail = imgEl?.getAttribute("data-src") || imgEl?.src || "";
-        const fav = favEl ? parseInt(favEl.innerText.trim(), 10) : 0;
-
-        // Hapus simbol di judul
-        const cleanTitle = title.replace(/[:\-|"]/g, "").replace(/\s+/g, " ");
-
-        return { title: cleanTitle, link, thumbnail, fav };
-      });
+    // ⬇️ Ubah bagian ini
+    const browser = await puppeteer.launch({
+      headless: true,
+      args: ["--no-sandbox", "--disable-setuid-sandbox"] // << tambah ini
     });
-
-    await browser.close();
-    res.json(data);
-  } catch (err) {
-    res.status(500).json({ error: "Gagal scraping Zerochan", detail: err.message });
-  }
-});
 
 
 
