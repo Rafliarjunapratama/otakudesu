@@ -106,7 +106,7 @@ app.get("/api/anime/complete/page/:page", async (req, res) => {
 
 app.get("/api/anime/detail", async (req, res) => {
   try {
-    const { link } = req.query; // ambil dari query parameter
+    const { link } = req.query;
     if (!link) {
       return res.status(400).json({ error: "Missing link" });
     }
@@ -116,25 +116,26 @@ app.get("/api/anime/detail", async (req, res) => {
     const $ = cheerio.load(body);
 
     // Ambil judul & thumbnail
-    const judul = $(".jdlrx").text().trim() || null;
-    const thumbnail = $(".thumb img").attr("src") || null;
+    const judul = $(".jdlrx").text().trim();
+    let thumbnail =
+      $(".thumb img").attr("src") || $(".attachment-post-thumbnail").attr("src");
 
     // Sinopsis
-    const sinopsis = $(".sinopc").text().trim() || null;
+    const sinopsis = $(".sinopc").text().trim();
 
     // Info tambahan
     const episode = $(".infozingle p:contains('Episode')")
       .text()
       .replace("Episode:", "")
-      .trim() || null;
+      .trim();
     const hari = $(".infozingle p:contains('Hari')")
       .text()
       .replace("Hari:", "")
-      .trim() || null;
+      .trim();
     const tanggal = $(".infozingle p:contains('Tanggal')")
       .text()
       .replace("Tanggal:", "")
-      .trim() || null;
+      .trim();
 
     // Daftar episode
     const episodeList = [];
@@ -145,23 +146,24 @@ app.get("/api/anime/detail", async (req, res) => {
       episodeList.push({ title, tanggal, link: linkEp });
     });
 
-    return res.json({
+    res.json({
       judul,
       thumbnail,
       sinopsis,
+      episode: episodeList,
       info: {
         episode,
         hari,
         tanggal,
         link,
       },
-      episodeList,
     });
   } catch (err) {
-    console.error("Scraping error:", err.message);
-    return res.status(500).json({ error: "Gagal mengambil data anime" });
+    console.error("Scraping error:", err);
+    res.status(500).json({ error: "Gagal mengambil data anime" });
   }
 });
+
 
 
 
