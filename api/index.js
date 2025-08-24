@@ -105,54 +105,55 @@ app.get("/api/anime/complete/page/:page", async (req, res) => {
 });
 
 
-app.get("/api/anime/detail", async (req, res) => {
-  const url = "https://otakudesu.best/anime/takopii-genzai-sub-indo/";
-
+app.post("/api/anime/detail", async (req, res) => {
   try {
-    const response = await gotScraping({
-      url,
-      headers: {
-        "User-Agent":
-          "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/119.0.0.0 Safari/537.36",
-      },
-    });
+    const { link } = req.body;
+    if (!link) {
+      return res.status(400).json({ error: "Missing link" });
+    }
 
-    const html = response.body;
-    const $ = cheerio.load(html);
+    const response = await fetch(link);
+    const body = await response.text();
+    const $ = cheerio.load(body);
 
-    // ✅ Info anime
-    const info = {};
-    $(".infozingle p").each((i, el) => {
-      const text = $(el).text().trim();
-      const [key, ...val] = text.split(":");
-      info[key.trim()] = val.join(":").trim();
-    });
+    // Ambil judul & thumbnail
+    const judul = $(".jdlrx").text().trim();
+    const thumbnail = $(".thumb img").attr("src");
 
-    // ✅ Sinopsis
+    // Sinopsis
     const sinopsis = $(".sinopc").text().trim();
 
-    // ✅ Episode list
-    const episodes = [];
+    // Info tambahan (contoh: jumlah episode, hari, tanggal)
+    const episode = $(".infozingle p:contains('Episode')").text().replace("Episode:", "").trim();
+    const hari = $(".infozingle p:contains('Hari')").text().replace("Hari:", "").trim();
+    const tanggal = $(".infozingle p:contains('Tanggal')").text().replace("Tanggal:", "").trim();
+
+    // Ambil daftar episode (list link)
+    const episodeList = [];
     $(".episodelist ul li").each((i, el) => {
       const title = $(el).find("a").text().trim();
-      const link = $(el).find("a").attr("href");
-      const date = $(el).find(".zeebr").text().trim();
-      episodes.push({ title, link, date });
+      const tanggal = $(el).find(".zeebr").text().trim();
+      const linkEp = $(el).find("a").attr("href");
+      episodeList.push({ title, tanggal, link: linkEp });
     });
 
     res.json({
-      info,
+      judul,
+      thumbnail,
       sinopsis,
-      episodes,
+      episode: episodeList,
+      info: {
+        episode,
+        hari,
+        tanggal,
+        link,
+      },
     });
   } catch (err) {
-    res.status(500).json({
-      error: "Gagal scraping detail anime",
-      detail: err.message,
-    });
+    console.error("Scraping error:", err);
+    res.status(500).json({ error: "Gagal mengambil data anime" });
   }
 });
-
 
 
 
