@@ -104,10 +104,9 @@ app.get("/api/anime/complete/page/:page", async (req, res) => {
   }
 });
 
-
-app.post("/api/anime/detail", async (req, res) => {
+app.get("/api/anime/detail", async (req, res) => {
   try {
-    const { link } = req.body;
+    const { link } = req.query; // ambil dari query parameter
     if (!link) {
       return res.status(400).json({ error: "Missing link" });
     }
@@ -123,12 +122,21 @@ app.post("/api/anime/detail", async (req, res) => {
     // Sinopsis
     const sinopsis = $(".sinopc").text().trim();
 
-    // Info tambahan (contoh: jumlah episode, hari, tanggal)
-    const episode = $(".infozingle p:contains('Episode')").text().replace("Episode:", "").trim();
-    const hari = $(".infozingle p:contains('Hari')").text().replace("Hari:", "").trim();
-    const tanggal = $(".infozingle p:contains('Tanggal')").text().replace("Tanggal:", "").trim();
+    // Info tambahan
+    const episode = $(".infozingle p:contains('Episode')")
+      .text()
+      .replace("Episode:", "")
+      .trim();
+    const hari = $(".infozingle p:contains('Hari')")
+      .text()
+      .replace("Hari:", "")
+      .trim();
+    const tanggal = $(".infozingle p:contains('Tanggal')")
+      .text()
+      .replace("Tanggal:", "")
+      .trim();
 
-    // Ambil daftar episode (list link)
+    // Daftar episode
     const episodeList = [];
     $(".episodelist ul li").each((i, el) => {
       const title = $(el).find("a").text().trim();
@@ -154,6 +162,8 @@ app.post("/api/anime/detail", async (req, res) => {
     res.status(500).json({ error: "Gagal mengambil data anime" });
   }
 });
+
+
 
 
 
