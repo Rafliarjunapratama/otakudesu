@@ -116,25 +116,25 @@ app.get("/api/anime/detail", async (req, res) => {
     const $ = cheerio.load(body);
 
     // Ambil judul & thumbnail
-    const judul = $(".jdlrx").text().trim();
-    const thumbnail = $(".thumb img").attr("src");
+    const judul = $(".jdlrx").text().trim() || null;
+    const thumbnail = $(".thumb img").attr("src") || null;
 
     // Sinopsis
-    const sinopsis = $(".sinopc").text().trim();
+    const sinopsis = $(".sinopc").text().trim() || null;
 
     // Info tambahan
     const episode = $(".infozingle p:contains('Episode')")
       .text()
       .replace("Episode:", "")
-      .trim();
+      .trim() || null;
     const hari = $(".infozingle p:contains('Hari')")
       .text()
       .replace("Hari:", "")
-      .trim();
+      .trim() || null;
     const tanggal = $(".infozingle p:contains('Tanggal')")
       .text()
       .replace("Tanggal:", "")
-      .trim();
+      .trim() || null;
 
     // Daftar episode
     const episodeList = [];
@@ -145,23 +145,24 @@ app.get("/api/anime/detail", async (req, res) => {
       episodeList.push({ title, tanggal, link: linkEp });
     });
 
-    res.json({
+    return res.json({
       judul,
       thumbnail,
       sinopsis,
-      episode: episodeList,
       info: {
         episode,
         hari,
         tanggal,
         link,
       },
+      episodeList,
     });
   } catch (err) {
-    console.error("Scraping error:", err);
-    res.status(500).json({ error: "Gagal mengambil data anime" });
+    console.error("Scraping error:", err.message);
+    return res.status(500).json({ error: "Gagal mengambil data anime" });
   }
 });
+
 
 
 
