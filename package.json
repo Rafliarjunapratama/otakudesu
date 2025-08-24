@@ -6,6 +6,9 @@
   "scripts": {
     "start": "node api/index.js"
   },
+  "engines": {
+    "node": "20.x"
+  },
   "dependencies": {
     "cheerio": "^1.0.0",
     "cors": "^2.8.5",
