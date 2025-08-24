@@ -106,63 +106,58 @@ app.get("/api/anime/complete/page/:page", async (req, res) => {
 
 
 app.get("/api/anime/detail", async (req, res) => {
-  try {
-    const link = req.query.url;
-    if (!link) return res.status(400).json({ error: "Missing url query" });
+  const url = "https://otakudesu.best/anime/takopii-genzai-sub-indo/";
 
-    const response = await fetch(link, {
+  try {
+    const response = await fetch(url, {
       headers: {
         "User-Agent":
-          "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/114.0.0.0 Safari/537.36",
-        "Accept":
-          "text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8",
-        "Accept-Language": "en-US,en;q=0.9",
-        "Referer": "https://otakudesu.best/",
+          "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/119.0.0.0 Safari/537.36",
       },
     });
+
+    if (!response.ok) {
+      return res.json({
+        error: "Gagal fetch",
+        status: response.status,
+      });
+    }
 
     const html = await response.text();
     const $ = cheerio.load(html);
 
-    // --- Info ---
+    // ✅ Info anime
     const info = {};
-    $(".infozin .infozingle p").each((_, el) => {
-      const label = $(el).find("b").text().replace(":", "").trim();
-      let value = $(el).text().replace(label + ":", "").trim();
-      if (label === "Genre") {
-        const genres = [];
-        $(el).find("a").each((_, a) => {
-          genres.push($(a).text().trim());
-        });
-        value = genres.join(", ");
-      }
-      if (label) info[label] = value;
+    $(".infozingle p").each((i, el) => {
+      const text = $(el).text().trim();
+      const [key, ...val] = text.split(":");
+      info[key.trim()] = val.join(":").trim();
     });
 
-    // --- Sinopsis ---
-    let sinopsis = $(".sinopc p")
-      .map((_, el) => $(el).text().trim())
-      .get()
-      .join(" ");
-    
-    // --- Episodes ---
+    // ✅ Sinopsis
+    const sinopsis = $(".sinopc").text().trim();
+
+    // ✅ Episode list
     const episodes = [];
-    $(".episodelist ul li").each((_, el) => {
+    $(".episodelist ul li").each((i, el) => {
       const title = $(el).find("a").text().trim();
-      const linkEp = $(el).find("a").attr("href");
+      const link = $(el).find("a").attr("href");
       const date = $(el).find(".zeebr").text().trim();
-      episodes.push({ title, link: linkEp, date });
+      episodes.push({ title, link, date });
     });
 
-    res.json({ info, sinopsis, episodes });
+    res.json({
+      info,
+      sinopsis,
+      episodes,
+    });
   } catch (err) {
-    res.status(500).json({
+    res.json({
       error: "Gagal scraping detail anime",
       detail: err.message,
     });
   }
 });
-
 
 
 
