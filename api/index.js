@@ -169,38 +169,43 @@ app.get("/api/anime/detail", async (req, res) => {
   }
 });
 
-// API Pinterest Search
-app.get("/api/pinterest", async (req, res) => {
+
+//api zeochan web
+app.get("/api/zerochan/search", async (req, res) => {
+  const query = req.query.q || "anime";
+  const url = `https://www.zerochan.net/search?q=${encodeURIComponent(query)}`;
+
   try {
-    const { q } = req.query;
-    if (!q) return res.status(400).json({ error: "Missing query parameter 'q'" });
+    const browser = await puppeteer.launch({ headless: true });
+    const page = await browser.newPage();
 
-    const url = `https://id.pinterest.com/search/pins/?q=${encodeURIComponent(q)}`;
+    await page.setUserAgent(
+      "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/119.0.0.0 Safari/537.36"
+    );
+    await page.goto(url, { waitUntil: "networkidle2" });
 
-    const response = await gotScraping(url, {
-      headers: {
-        "User-Agent":
-          "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/114.0.0.0 Safari/537.36",
-      },
+    const data = await page.evaluate(() => {
+      return Array.from(document.querySelectorAll("#thumbs2 li")).map((el) => {
+        const titleEl = el.querySelector("p a");
+        const imgEl = el.querySelector(".thumb img");
+        const favEl = el.querySelector(".fav b");
+
+        const title = titleEl?.innerText.trim() || "";
+        const link = titleEl ? "https://www.zerochan.net" + titleEl.getAttribute("href") : "";
+        const thumbnail = imgEl?.getAttribute("data-src") || imgEl?.src || "";
+        const fav = favEl ? parseInt(favEl.innerText.trim(), 10) : 0;
+
+        // Hapus simbol di judul
+        const cleanTitle = title.replace(/[:\-|"]/g, "").replace(/\s+/g, " ");
+
+        return { title: cleanTitle, link, thumbnail, fav };
+      });
     });
 
-    const html = response.body;
-
-    // Load dengan cheerio
-    const $ = cheerio.load(html);
-
-    const images = [];
-
-    // Pinterest menyimpan gambar di <img> atau <div> dengan style background
-    $("img").each((i, el) => {
-      const src = $(el).attr("src") || $(el).attr("data-src");
-      if (src) images.push(src);
-    });
-
-    res.json({ query: q, total: images.length, images });
+    await browser.close();
+    res.json(data);
   } catch (err) {
-    console.error(err);
-    res.status(500).json({ error: "Gagal scraping Pinterest", detail: err.message });
+    res.status(500).json({ error: "Gagal scraping Zerochan", detail: err.message });
   }
 });
 
