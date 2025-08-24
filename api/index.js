@@ -24,13 +24,16 @@ app.get("/api/anime", async (req, res) => {
       const $ = cheerio.load(html);
 
       $("li .detpost").each((i, el) => {
+        const rawJudul = $(el).find(".thumb h2.jdlflm").text().trim();
         data.push({
           episode: $(el).find(".epz").text().trim(),
           hari: $(el).find(".epztipe").text().trim(),
           tanggal: $(el).find(".newnime").text().trim(),
           link: $(el).find(".thumb a").attr("href"),
           thumbnail: $(el).find(".thumb img").attr("src"),
-          judul: $(el).find(".thumb h2.jdlflm").text().trim(),
+          judul: rawJudul
+          .replace(/[^a-zA-Z0-9\s]/g, "")
+          .replace(/\s+/g, " "),
         });
       });
     }
@@ -49,13 +52,16 @@ app.get("/api/anime/complete", async (req, res) => {
 
     const data = [];
     $("li .detpost").each((i, el) => {
+      const rawJudul = $(el).find(".thumb h2.jdlflm").text().trim();
       data.push({
         episode: $(el).find(".epz").text().trim(),
         rating: $(el).find(".epztipe").text().trim(),
         tanggal: $(el).find(".newnime").text().trim(),
         link: $(el).find(".thumb a").attr("href"),
         thumbnail: $(el).find(".thumb img").attr("src"),
-        judul: $(el).find(".thumb h2.jdlflm").text().trim(),
+        judul: rawJudul
+          .replace(/[^a-zA-Z0-9\s]/g, "")
+          .replace(/\s+/g, " "),
       });
     });
 
@@ -85,13 +91,16 @@ app.get("/api/anime/complete/page/:page", async (req, res) => {
 
     const data = [];
     $("li .detpost").each((i, el) => {
+      const rawTitle = $(el).find(".thumb h2.jdlflm").text().trim();
       data.push({
         episode: $(el).find(".epz").text().trim(),
         hari: $(el).find(".epztipe").text().trim(),
         tanggal: $(el).find(".newnime").text().trim(),
         link: $(el).find(".thumb a").attr("href"),
         thumbnail: $(el).find(".thumb img").attr("src"),
-        judul: $(el).find(".thumb h2.jdlflm").text().trim(),
+        judul: rawTitle
+          .replace(/[^a-zA-Z0-9\s]/g, "")
+          .replace(/\s+/g, " "),
       });
     });
 
