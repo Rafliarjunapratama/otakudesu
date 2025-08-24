@@ -117,8 +117,14 @@ app.get("/api/anime/detail", async (req, res) => {
 
     // Ambil judul & thumbnail
     const judul = $(".jdlrx").text().trim();
-    let thumbnail =
-      $(".thumb img").attr("src") || $(".attachment-post-thumbnail").attr("src");
+    let thumbnail = $(".thumb img").attr("srcset");
+if (thumbnail) {
+  // ambil resolusi terbesar dari srcset (biasanya yang terakhir)
+  thumbnail = thumbnail.split(",").map(x => x.trim().split(" ")[0]).pop();
+} else {
+  // fallback ke src biasa
+  thumbnail = $(".thumb img").attr("src");
+}
 
     // Sinopsis
     const sinopsis = $(".sinopc").text().trim();
