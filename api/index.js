@@ -109,21 +109,15 @@ app.get("/api/anime/detail", async (req, res) => {
   const url = "https://otakudesu.best/anime/takopii-genzai-sub-indo/";
 
   try {
-    const response = await fetch(url, {
+    const response = await gotScraping({
+      url,
       headers: {
         "User-Agent":
           "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/119.0.0.0 Safari/537.36",
       },
     });
 
-    if (!response.ok) {
-      return res.json({
-        error: "Gagal fetch",
-        status: response.status,
-      });
-    }
-
-    const html = await response.text();
+    const html = response.body;
     const $ = cheerio.load(html);
 
     // ✅ Info anime
@@ -152,7 +146,7 @@ app.get("/api/anime/detail", async (req, res) => {
       episodes,
     });
   } catch (err) {
-    res.json({
+    res.status(500).json({
       error: "Gagal scraping detail anime",
       detail: err.message,
     });
