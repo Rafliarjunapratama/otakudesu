@@ -3,6 +3,7 @@ import fetch from "node-fetch";
 import * as cheerio from "cheerio";
 import cors from "cors";
 import { gotScraping } from "got-scraping";
+import puppeteer from "puppeteer";
 
 const app = express();
 app.use(cors());
