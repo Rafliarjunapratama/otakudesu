@@ -169,6 +169,40 @@ app.get("/api/anime/detail", async (req, res) => {
   }
 });
 
+// API Pinterest Search
+app.get("/api/pinterest", async (req, res) => {
+  try {
+    const { q } = req.query;
+    if (!q) return res.status(400).json({ error: "Missing query parameter 'q'" });
+
+    const url = `https://id.pinterest.com/search/pins/?q=${encodeURIComponent(q)}`;
+
+    const response = await gotScraping(url, {
+      headers: {
+        "User-Agent":
+          "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/114.0.0.0 Safari/537.36",
+      },
+    });
+
+    const html = response.body;
+
+    // Load dengan cheerio
+    const $ = cheerio.load(html);
+
+    const images = [];
+
+    // Pinterest menyimpan gambar di <img> atau <div> dengan style background
+    $("img").each((i, el) => {
+      const src = $(el).attr("src") || $(el).attr("data-src");
+      if (src) images.push(src);
+    });
+
+    res.json({ query: q, total: images.length, images });
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ error: "Gagal scraping Pinterest", detail: err.message });
+  }
+});
 
 
 
