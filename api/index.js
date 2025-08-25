@@ -265,44 +265,49 @@ app.get("/api/zerochan/characters", async (req, res) => {
   const url = `https://www.zerochan.net/${encodeURIComponent(query)}`;
 
   try {
-    const browser = await puppeteer.launch({
-      headless: true,
-      args: ["--no-sandbox", "--disable-setuid-sandbox"],
-    });
-    const page = await browser.newPage();
-
-    await page.setUserAgent(
-      "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/119.0.0.0 Safari/537.36"
-    );
-    await page.goto(url, { waitUntil: "networkidle2" });
-
-    const data = await page.evaluate(() => {
-      return Array.from(document.querySelectorAll(".carousel.thumbs li")).map((el) => {
-        const aEl = el.querySelector("a");
-        const imgEl = el.querySelector(".thumb");
-        const nameEl = el.querySelector("p.character");
-        const countEl = el.querySelector("i");
-
-        const link = aEl ? "https://www.zerochan.net" + aEl.getAttribute("href") : "";
-        const name = nameEl ? nameEl.innerText.trim() : "";
-        let thumbnail = "";
-        if (imgEl) {
-          thumbnail = imgEl.getAttribute("data-src") 
-            || imgEl.style.backgroundImage.replace(/url\(["']?(.*?)["']?\)/, "$1");
-        }
-        const entries = countEl ? parseInt(countEl.innerText.trim(), 10) : 0;
-
-        return { name, link, thumbnail, entries };
-      });
+    const response = await fetch(url, {
+      headers: {
+        "User-Agent":
+          "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/119.0.0.0 Safari/537.36",
+      },
     });
 
-    await browser.close();
+    if (!response.ok) {
+      throw new Error(`Fetch gagal dengan status ${response.status}`);
+    }
+
+    const html = await response.text();
+    const $ = cheerio.load(html);
+
+    const data = [];
+    $(".carousel.thumbs li").each((i, el) => {
+      if (i >= 20) return; // batasi hanya 20 karakter
+
+      const aEl = $(el).find("a");
+      const imgEl = $(el).find(".thumb");
+      const nameEl = $(el).find("p.character");
+      const countEl = $(el).find("i");
+
+      const link = aEl.length ? "https://www.zerochan.net" + aEl.attr("href") : "";
+      const name = nameEl.length ? nameEl.text().trim() : "";
+      let thumbnail = "";
+
+      if (imgEl.length) {
+        const dataSrc = imgEl.attr("data-src");
+        const bgImage = imgEl.css("background-image")?.match(/url\(["']?(.*?)["']?\)/)?.[1];
+        thumbnail = dataSrc || bgImage || "";
+      }
+
+      const entries = countEl.length ? parseInt(countEl.text().trim(), 10) : 0;
+
+      if (name) data.push({ name, link, thumbnail, entries });
+    });
+
     res.json(data);
   } catch (err) {
     res.status(500).json({ error: "Gagal scraping characters", detail: err.message });
   }
 });
-
 
 
 
