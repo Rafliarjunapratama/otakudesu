@@ -1,4 +1,4 @@
-import express from "express";
+x  import express from "express";
 import fetch from "node-fetch";
 import * as cheerio from "cheerio";
 import cors from "cors";
@@ -225,9 +225,7 @@ app.get("/api/anime/detail/video", async (req, res) => {
   }
 });
 
-app.listen(3000, () => {
-  console.log("Server running on http://localhost:3000");
-});
+
 
 
 //api zerochan web
@@ -270,8 +268,9 @@ app.get("/api/zerochan/search", async (req, res) => {
     await browser.close();
     res.json(data);
   } catch (err) {
-    res.status(500).json({ error: "Gagal scraping Zerochan", detail: err.mes
-
+    res.status(500).json({ error: "Gagal scraping Zerochan", detail: err.message });
+  }
+});
 
 
 
