@@ -228,12 +228,6 @@ app.get("/api/anime/detail/video", async (req, res) => {
   }
 });
 
-// biar bisa jalan di railway
-const PORT = process.env.PORT || 3000;
-app.listen(PORT, () => {
-  console.log(`Server running on port ${PORT}`);
-});
-
 
 //api zerochan web
 app.get("/api/zerochan/search", async (req, res) => {
