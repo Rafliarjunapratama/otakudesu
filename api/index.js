@@ -219,7 +219,6 @@ app.get("/api/anime/detail", async (req, res) => {
 });
 
 
-//scraptvideo 
 app.get("/api/anime/detail/video", async (req, res) => {
   try {
     const { link } = req.query;
@@ -232,19 +231,29 @@ app.get("/api/anime/detail/video", async (req, res) => {
     const body = await response.text();
     const $ = cheerio.load(body);
 
-    // ambil iframe src
-    const iframeSrc = $("#embed_holder iframe").attr("src");
+    // ambil semua mirror 720p
+    const mirrors = [];
+    $(".m720p li a").each((i, el) => {
+      const title = $(el).text().trim();
+      const data = $(el).attr("data-content") || "";
+      mirrors.push({ provider: title, data });
+    });
 
-    if (!iframeSrc) {
-      return res.status(404).json({ error: "Video tidak ditemukan" });
+    if (mirrors.length === 0) {
+      return res.status(404).json({ error: "Video 720p tidak ditemukan" });
     }
 
+    // ambil default (biasanya yang ada `data-default="true"`)
+    const defaultMirror = $(".m720p li a[data-default='true']").attr("data-content");
+
     res.json({
-      video: iframeSrc,
+      quality: "720p",
+      default: defaultMirror || null,
+      mirrors,
     });
   } catch (err) {
     console.error("Scraping error:", err);
-    res.status(500).json({ error: "Gagal mengambil link video" });
+    res.status(500).json({ error: "Gagal mengambil link video 720p" });
   }
 });
 
