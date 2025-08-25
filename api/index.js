@@ -296,6 +296,60 @@ app.get("/api/zerochan/characters", async (req, res) => {
 });
 
 
+app.get("/api/anime/search", async (req, res) => {
+  const query = req.query.q || "watanare";
+  const filter = req.query.q_filter || "anime";
+  const searchUrl = `https://otakotaku.com/anime/search?q=${encodeURIComponent(query)}&q_filter=${filter}`;
+
+  try {
+    // 1. Ambil hasil search
+    const searchResp = await fetch(searchUrl);
+    const searchHtml = await searchResp.text();
+    const $ = cheerio.load(searchHtml);
+
+    // Ambil anime pertama
+    const firstAnimeEl = $(".anime-list").first();
+    const title = firstAnimeEl.find(".anime-title a").text().trim();
+    const link = firstAnimeEl.find(".anime-title a").attr("href");
+    const img = firstAnimeEl.find(".anime-img img").attr("src") || firstAnimeEl.find(".anime-img img").attr("data-src");
+    const sinopsis = firstAnimeEl.find(".sinopsis-anime").text().trim();
+    const tipe = firstAnimeEl.find("table tr:nth-child(1) td:nth-child(2) a").text().trim();
+    const eps = firstAnimeEl.find("table tr:nth-child(2) td:nth-child(2)").text().trim();
+    const musim = firstAnimeEl.find("table tr:nth-child(3) td:nth-child(2) a").text().trim();
+
+    // 2. Ambil skor anime
+    const animePageResp = await fetch(link);
+    const animePageHtml = await animePageResp.text();
+    const $$ = cheerio.load(animePageHtml);
+    const skor = $$(".skor_anime").first().text().trim();
+
+    // 3. Ambil karakter dari halaman character
+    const characterLink = link.replace("/view/", "/character/");
+    const charResp = await fetch(characterLink);
+    const charHtml = await charResp.text();
+    const $$$ = cheerio.load(charHtml);
+
+    const characters = [];
+    $$$(".anime-char-list").each((i, el) => {
+      const charName = $(el).find(".char-name a").text().trim();
+      const charLink = $(el).find(".char-name a").attr("href");
+      const charImg = $(el).find(".char-img img").attr("src") || $(el).find(".char-img img").attr("data-src");
+      const charType = $(el).find(".char-jenis-karakter small").text().trim();
+      const seiyuuName = $(el).find(".char-seiyuu-list a").text().trim();
+      const seiyuuLink = $(el).find(".char-seiyuu-list a").attr("href");
+      const seiyuuImg = $(el).find(".seiyuu-img img").attr("src") || $(el).find(".seiyuu-img img").attr("data-src");
+
+      characters.push({ charName, charLink, charImg, charType, seiyuuName, seiyuuLink, seiyuuImg });
+    });
+
+    res.json({ query, filter, anime: { title, link, img, sinopsis, tipe, eps, musim, skor, characterLink, characters } });
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ error: "Gagal mengambil data" });
+  }
+});
+
+
 
 
 
