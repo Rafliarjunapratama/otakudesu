@@ -75,6 +75,51 @@ app.get("/api/anime/complete", async (req, res) => {
   }
 });
 
+//===========================
+// API Anime Page
+// ==========================
+
+app.get("/api/anime/complete/page/:page", async (req, res) => {
+  try {
+    const page = req.params.page;
+    const url = `https://otakudesu.best/complete-anime/page/${page}/`;
+
+    const response = await fetch(url, {
+      headers: {
+        "User-Agent":
+          "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/114.0.0.0 Safari/537.36",
+      },
+    });
+    if (!response.ok) throw new Error(`Fetch gagal, status ${response.status}`);
+
+    const html = await response.text();
+    const $ = cheerio.load(html);
+
+    const data = [];
+    $("li .detpost").each((i, el) => {
+      const rawTitle = $(el).find(".thumb h2.jdlflm").text().trim();
+      data.push({
+        episode: $(el).find(".epz").text().trim(),
+        hari: $(el).find(".epztipe").text().trim(),
+        tanggal: $(el).find(".newnime").text().trim(),
+        link: $(el).find(".thumb a").attr("href"),
+        thumbnail: $(el).find(".thumb img").attr("src"),
+        judul: rawTitle
+          .replace(/[^a-zA-Z0-9\s]/g, "")
+          .replace(/\s+/g, " "),
+      });
+    });
+
+    res.json(data);
+  } catch (err) {
+    res.status(500).json({
+      error: "Gagal scraping complete anime",
+      detail: err.message,
+    });
+  }
+});
+
+
 // ==========================
 // API Anime Detail
 // ==========================
