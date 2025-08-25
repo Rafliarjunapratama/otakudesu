@@ -184,33 +184,53 @@ app.get("/api/anime/detail", async (req, res) => {
 //api zerochan web
 app.get("/api/zerochan/search", async (req, res) => {
   const query = req.query.q || "anime";
-  const url = `https://www.zerochan.net/search?q=${encodeURIComponent(query)}`;
+  const searchUrl = `https://www.zerochan.net/search?q=${encodeURIComponent(query)}`;
 
   try {
     const browser = await puppeteer.launch({
       headless: true,
-      args: ["--no-sandbox", "--disable-setuid-sandbox"] // wajib di Railway
+      args: ["--no-sandbox", "--disable-setuid-sandbox"]
     });
 
     const page = await browser.newPage();
-    await page.goto(url, { waitUntil: "domcontentloaded" });
+    await page.goto(searchUrl, { waitUntil: "domcontentloaded" });
 
-    const data = await page.evaluate(() =>
-      Array.from(document.querySelectorAll("#thumbs2 li")).map((el) => {
-        const titleEl = el.querySelector("p a");
-        const imgEl = el.querySelector(".thumb img");
-        const favEl = el.querySelector(".fav b");
+    // cek apakah redirect ke direct gallery
+    const currentUrl = page.url();
 
-        const title = titleEl?.innerText.trim() || "";
-        const link = titleEl
-          ? "https://www.zerochan.net" + titleEl.getAttribute("href")
-          : "";
-        const thumbnail = imgEl?.getAttribute("data-src") || imgEl?.src || "";
-        const fav = favEl ? parseInt(favEl.innerText.trim(), 10) : 0;
+    let data = [];
 
-        return { title, link, thumbnail, fav };
-      })
-    );
+    if (!currentUrl.includes("/search")) {
+      // direct gallery page
+      data = await page.evaluate(() =>
+        Array.from(document.querySelectorAll(".thumb img")).map((img) => {
+          const thumbnail = img.getAttribute("data-src") || img.src || "";
+          const link = img.parentElement?.getAttribute("href") 
+            ? "https://www.zerochan.net" + img.parentElement.getAttribute("href")
+            : "";
+          const title = img.alt || "";
+          return { title, link, thumbnail, fav: 0 }; // fav tidak ada di gallery
+        })
+      );
+    } else {
+      // normal search page
+      data = await page.evaluate(() =>
+        Array.from(document.querySelectorAll("#thumbs2 li")).map((el) => {
+          const titleEl = el.querySelector("p a");
+          const imgEl = el.querySelector(".thumb img");
+          const favEl = el.querySelector(".fav b");
+
+          const title = titleEl?.innerText.trim() || "";
+          const link = titleEl
+            ? "https://www.zerochan.net" + titleEl.getAttribute("href")
+            : "";
+          const thumbnail = imgEl?.getAttribute("data-src") || imgEl?.src || "";
+          const fav = favEl ? parseInt(favEl.innerText.trim(), 10) : 0;
+
+          return { title, link, thumbnail, fav };
+        })
+      );
+    }
 
     await browser.close();
     res.json(data);
@@ -218,6 +238,7 @@ app.get("/api/zerochan/search", async (req, res) => {
     res.status(500).json({ error: "Gagal scraping Zerochan", detail: err.message });
   }
 });
+
 
 
 
