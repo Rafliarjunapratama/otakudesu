@@ -171,23 +171,71 @@ app.get("/api/anime/detail", async (req, res) => {
 // ==========================
 // API Detail Video
 // ==========================
-app.get("/api/anime/detail/video", async (req, res) => {
+app.get("/api/anime/detail", async (req, res) => {
   try {
     const { link } = req.query;
-    if (!link) return res.status(400).json({ error: "Missing link" });
+    if (!link) {
+      return res.status(400).json({ error: "Missing link" });
+    }
 
     const response = await fetch(link);
     const body = await response.text();
     const $ = cheerio.load(body);
 
-    const iframeSrc = $("#embed_holder iframe").attr("src");
-    if (!iframeSrc) return res.status(404).json({ error: "Video tidak ditemukan" });
+    // Judul
+    const judul = $(".jdlrx").text().trim();
 
-    res.json({ video: iframeSrc });
+    // Thumbnail (cek beberapa kemungkinan selector)
+    let thumbnail =
+      $(".fotoanime img").attr("src") ||
+      $(".fotoanime img").attr("data-src") ||
+      $(".thumb img").attr("src") ||
+      $(".thumb img").attr("data-src");
+
+    if (thumbnail) {
+      // hapus suffix -WxH hanya jika ada
+      thumbnail = thumbnail.replace(/-\d+x\d+(?=\.(jpg|jpeg|png))/i, "");
+    }
+
+    // Sinopsis
+    const sinopsis = $(".sinopc").text().trim();
+
+    // Info tambahan
+    const episode = $(".infozingle p:contains('Episode')")
+      .text()
+      .replace("Episode:", "")
+      .trim();
+    const hari = $(".infozingle p:contains('Hari')")
+      .text()
+      .replace("Hari:", "")
+      .trim();
+    const tanggal = $(".infozingle p:contains('Tanggal')")
+      .text()
+      .replace("Tanggal:", "")
+      .trim();
+
+    // Daftar episode
+    const episodeList = [];
+    $(".episodelist ul li").each((i, el) => {
+      const title = $(el).find("a").text().trim();
+      const tanggal = $(el).find(".zeebr").text().trim();
+      const linkEp = $(el).find("a").attr("href");
+      episodeList.push({ title, tanggal, link: linkEp });
+    });
+
+    res.json({
+      judul,
+      thumbnail,
+      sinopsis,
+      episode: episodeList,
+      info: { episode, hari, tanggal, link },
+    });
   } catch (err) {
-    res.status(500).json({ error: "Gagal mengambil link video", detail: err.message });
+    console.error("Scraping error:", err);
+    res.status(500).json({ error: "Gagal mengambil data anime" });
   }
 });
+
 
 // ==========================
 // API Zerochan Search
