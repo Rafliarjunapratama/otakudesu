@@ -199,7 +199,42 @@ $(".episodelist ul li").each((i, el) => {
 });
 
 
-//api zeochan web
+//scraptvideo 
+app.get("/api/anime/detail/video", async (req, res) => {
+  try {
+    const { link } = req.query;
+    if (!link) {
+      return res.status(400).json({ error: "Missing link" });
+    }
+
+    // fetch halaman episode otakudesu
+    const response = await fetch(link);
+    const body = await response.text();
+    const $ = cheerio.load(body);
+
+    // ambil iframe src
+    const iframeSrc = $("#embed_holder iframe").attr("src");
+
+    if (!iframeSrc) {
+      return res.status(404).json({ error: "Video tidak ditemukan" });
+    }
+
+    res.json({
+      video: iframeSrc,
+    });
+  } catch (err) {
+    console.error("Scraping error:", err);
+    res.status(500).json({ error: "Gagal mengambil link video" });
+  }
+});
+
+// biar bisa jalan di railway
+const PORT = process.env.PORT || 3000;
+app.listen(PORT, () => {
+  console.log(`Server running on port ${PORT}`);
+});
+
+
 //api zerochan web
 app.get("/api/zerochan/search", async (req, res) => {
   const query = req.query.q || "anime";
