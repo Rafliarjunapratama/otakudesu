@@ -234,7 +234,10 @@ app.get("/api/zerochan/search", async (req, res) => {
   const url = `https://www.zerochan.net/search?q=${encodeURIComponent(query)}`;
 
   try {
-    const browser = await puppeteer.launch({ headless: true });
+    const browser = await puppeteer.launch({
+      headless: true,
+      args: ["--no-sandbox", "--disable-setuid-sandbox"], // <-- penting!
+    });
     const page = await browser.newPage();
 
     await page.setUserAgent(
@@ -253,7 +256,6 @@ app.get("/api/zerochan/search", async (req, res) => {
         const thumbnail = imgEl?.getAttribute("data-src") || imgEl?.src || "";
         const fav = favEl ? parseInt(favEl.innerText.trim(), 10) : 0;
 
-        // Hapus simbol di judul
         const cleanTitle = title.replace(/[:\-|"]/g, "").replace(/\s+/g, " ");
 
         return { title: cleanTitle, link, thumbnail, fav };
@@ -266,6 +268,7 @@ app.get("/api/zerochan/search", async (req, res) => {
     res.status(500).json({ error: "Gagal scraping Zerochan", detail: err.message });
   }
 });
+
 
 
 
