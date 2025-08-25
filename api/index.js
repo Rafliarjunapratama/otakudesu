@@ -128,73 +128,50 @@ app.get("/api/anime/detail", async (req, res) => {
       },
     });
     if (!response.ok) throw new Error(`Fetch gagal ${response.status}`);
+
     const body = await response.text();
     const $ = cheerio.load(body);
 
     // Judul
     const judul = $(".jdlrx").text().trim();
 
-    // Thumbnail (cek beberapa kemungkinan selector)
+    // Thumbnail
     let thumbnail =
       $(".fotoanime img").attr("src") ||
       $(".fotoanime img").attr("data-src") ||
       $(".thumb img").attr("src") ||
-      $(".thumb img").attr("data-src");
-
-    if (thumbnail) {
-      thumbnail = thumbnail.replace(/-\d+x\d+(?=\.(jpg|jpeg|png))/i, "");
-    }
+      $(".thumb img").attr("data-src") ||
+      "";
+    if (thumbnail) thumbnail = thumbnail.replace(/-\d+x\d+(?=\.(jpg|jpeg|png))/i, "");
 
     // Sinopsis
     const sinopsis = $(".sinopc").text().trim();
 
     // Info tambahan
-    const infoEpisode = $(".infozingle p:contains('Episode')")
-      .text()
-      .replace("Episode:", "")
-      .trim();
-    const hari = $(".infozingle p:contains('Hari')")
-      .text()
-      .replace("Hari:", "")
-      .trim();
-    const tanggal = $(".infozingle p:contains('Tanggal')")
-      .text()
-      .replace("Tanggal:", "")
-      .trim();
+    const infoEpisode = $(".infozingle p:contains('Episode')").text().replace("Episode:", "").trim();
+    const hari = $(".infozingle p:contains('Hari')").text().replace("Hari:", "").trim();
+    const tanggal = $(".infozingle p:contains('Tanggal')").text().replace("Tanggal:", "").trim();
 
     // Daftar episode
-   // Daftar episode
-const episodeList = [];
-$(".episodelist ul li").each((i, el) => {
-  let title = $(el).find("a").text().trim();
-  const tglEp = $(el).find(".zeebr").text().trim();
-  const linkEp = $(el).find("a").attr("href");
+    const episodeList = [];
+    $(".episodelist ul li").each((i, el) => {
+      const aTag = $(el).find("a");
+      if (!aTag.length) return;
 
-  // skip batch dan episode lengkap
-  if (!linkEp || linkEp.includes("/batch/") || linkEp.includes("/lengkap/")) return;
+      const linkEp = aTag.attr("href");
+      // Skip batch dan episode lengkap
+      if (!linkEp || linkEp.includes("/batch/") || linkEp.includes("/lengkap/")) return;
 
-  // bersihkan judul
-  if (judul) {
-    const regex = new RegExp(judul, "gi");
-    title = title.replace(regex, "").trim();
-  }
-  title = title.replace(/Subtitle Indonesia/gi, "").trim();
+      let title = aTag.text().trim();
+      const tglEp = $(el).find(".zeebr").text().trim();
 
-  // kalau ada "Episode X" pakai itu aja
-  const epMatch = title.match(/Episode\s*\d+/i);
-  if (epMatch) {
-    title = epMatch[0];
-  }
-
-  episodeList.push({ title, tanggal: tglEp, link: linkEp });
-});
+      // Bersihkan judul anime dari episode
+      if (judul) title = title.replace(new RegExp(judul, "gi"), "").trim();
       title = title.replace(/Subtitle Indonesia/gi, "").trim();
 
-      // kalau ada "Episode X" pakai itu aja
+      // Ambil "Episode X" saja kalau ada
       const epMatch = title.match(/Episode\s*\d+/i);
-      if (epMatch) {
-        title = epMatch[0];
-      }
+      if (epMatch) title = epMatch[0];
 
       episodeList.push({ title, tanggal: tglEp, link: linkEp });
     });
