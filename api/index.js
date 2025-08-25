@@ -158,13 +158,32 @@ app.get("/api/anime/detail", async (req, res) => {
       .trim();
 
     // Daftar episode
-    const episodeList = [];
-    $(".episodelist ul li").each((i, el) => {
-      const title = $(el).find("a").text().trim();
-      const tanggal = $(el).find(".zeebr").text().trim();
-      const linkEp = $(el).find("a").attr("href");
-      episodeList.push({ title, tanggal, link: linkEp });
-    });
+ // Daftar episode
+const episodeList = [];
+$(".episodelist ul li").each((i, el) => {
+  let title = $(el).find("a").text().trim();
+  const tanggal = $(el).find(".zeebr").text().trim();
+  const linkEp = $(el).find("a").attr("href");
+
+  // Hapus batch
+  if (linkEp && linkEp.includes("/batch/")) return;
+
+  // Hapus kata "Subtitle Indonesia" dan nama anime dari judul
+  if (judul) {
+    const regex = new RegExp(judul, "gi");
+    title = title.replace(regex, "").trim();
+  }
+  title = title.replace(/Subtitle Indonesia/gi, "").trim();
+
+  // Tambahkan kata "Episode X" jika perlu
+  // Misal judul sekarang: "Episode 1" atau "Episode 12"
+  const epMatch = title.match(/Episode\s*\d+/i);
+  if (epMatch) {
+    title = epMatch[0]; // ambil hanya "Episode X"
+  }
+
+  episodeList.push({ title, tanggal, link: linkEp });
+});
 
     res.json({
       judul,
