@@ -2,6 +2,7 @@ import express from "express";
 import fetch from "node-fetch";
 import * as cheerio from "cheerio";
 import cors from "cors";
+import { gotScraping } from "got-scraping";
 import puppeteer from "puppeteer";
 
 const app = express();
@@ -13,9 +14,7 @@ app.get("/", (req, res) => {
   res.redirect("/api/anime");
 });
 
-// ==========================
-// API On-Going Anime
-// ==========================
+// API On-Going
 app.get("/api/anime", async (req, res) => {
   try {
     const data = [];
@@ -34,8 +33,8 @@ app.get("/api/anime", async (req, res) => {
           link: $(el).find(".thumb a").attr("href"),
           thumbnail: $(el).find(".thumb img").attr("src"),
           judul: rawJudul
-            .replace(/[^a-zA-Z0-9\s]/g, "")
-            .replace(/\s+/g, " "),
+          .replace(/[^a-zA-Z0-9\s]/g, "")
+          .replace(/\s+/g, " "),
         });
       });
     }
@@ -45,9 +44,7 @@ app.get("/api/anime", async (req, res) => {
   }
 });
 
-// ==========================
-// API Complete Anime
-// ==========================
+// API Complete
 app.get("/api/anime/complete", async (req, res) => {
   try {
     const url = "https://otakudesu.best/complete-anime/";
@@ -74,10 +71,6 @@ app.get("/api/anime/complete", async (req, res) => {
     res.status(500).json({ error: "Gagal scraping complete anime", detail: err.message });
   }
 });
-
-//===========================
-// API Anime Page
-// ==========================
 
 
 // API Complete by Page
@@ -121,56 +114,6 @@ app.get("/api/anime/complete/page/:page", async (req, res) => {
   }
 });
 
-
-// ==========================
-// API Anime Detail
-// ==========================
-app.get("/api/anime/detail", async (req, res) => {
-  try {
-    const { link } = req.query;
-    if (!link) {
-      return res.status(400).json({ error: "Missing link" });
-    }
-
-    const response = await fetch(link);
-    const body = await response.text();
-    const $ = cheerio.load(body);
-
-    const judul = $(".jdlrx").text().trim();
-    let thumbnail = $(".fotoanime img").attr("src") || $(".thumb img").attr("src");
-    if (thumbnail) {
-      thumbnail = thumbnail.replace(/-\d+x\d+(?=\.(jpg|jpeg|png))/i, "");
-    }
-    const sinopsis = $(".sinopc").text().trim();
-
-    const episodeList = [];
-    $(".episodelist ul li").each((i, el) => {
-      let title = $(el).find("a").text().trim();
-      const tanggal = $(el).find(".zeebr").text().trim();
-      const linkEp = $(el).find("a").attr("href");
-
-      if (linkEp && linkEp.includes("/batch/")) return;
-      if (judul) {
-        const regex = new RegExp(judul, "gi");
-        title = title.replace(regex, "").trim();
-      }
-      title = title.replace(/Subtitle Indonesia/gi, "").trim();
-
-      const epMatch = title.match(/Episode\s*\d+/i);
-      if (epMatch) title = epMatch[0];
-
-      episodeList.push({ title, tanggal, link: linkEp });
-    });
-
-    res.json({ judul, thumbnail, sinopsis, episode: episodeList, info: { link } });
-  } catch (err) {
-    res.status(500).json({ error: "Gagal mengambil data anime", detail: err.message });
-  }
-});
-
-// ==========================
-// API Detail Video
-// ==========================
 app.get("/api/anime/detail", async (req, res) => {
   try {
     const { link } = req.query;
@@ -215,13 +158,32 @@ app.get("/api/anime/detail", async (req, res) => {
       .trim();
 
     // Daftar episode
-    const episodeList = [];
-    $(".episodelist ul li").each((i, el) => {
-      const title = $(el).find("a").text().trim();
-      const tanggal = $(el).find(".zeebr").text().trim();
-      const linkEp = $(el).find("a").attr("href");
-      episodeList.push({ title, tanggal, link: linkEp });
-    });
+ // Daftar episode
+const episodeList = [];
+$(".episodelist ul li").each((i, el) => {
+  let title = $(el).find("a").text().trim();
+  const tanggal = $(el).find(".zeebr").text().trim();
+  const linkEp = $(el).find("a").attr("href");
+
+  // Hapus batch
+  if (linkEp && linkEp.includes("/batch/")) return;
+
+  // Hapus kata "Subtitle Indonesia" dan nama anime dari judul
+  if (judul) {
+    const regex = new RegExp(judul, "gi");
+    title = title.replace(regex, "").trim();
+  }
+  title = title.replace(/Subtitle Indonesia/gi, "").trim();
+
+  // Tambahkan kata "Episode X" jika perlu
+  // Misal judul sekarang: "Episode 1" atau "Episode 12"
+  const epMatch = title.match(/Episode\s*\d+/i);
+  if (epMatch) {
+    title = epMatch[0]; // ambil hanya "Episode X"
+  }
+
+  episodeList.push({ title, tanggal, link: linkEp });
+});
 
     res.json({
       judul,
@@ -237,9 +199,43 @@ app.get("/api/anime/detail", async (req, res) => {
 });
 
 
-// ==========================
-// API Zerochan Search
-// ==========================
+//scraptvideo 
+app.get("/api/anime/detail/video", async (req, res) => {
+  try {
+    const { link } = req.query;
+    if (!link) {
+      return res.status(400).json({ error: "Missing link" });
+    }
+
+    // fetch halaman episode otakudesu
+    const response = await fetch(link);
+    const body = await response.text();
+    const $ = cheerio.load(body);
+
+    // ambil iframe src
+    const iframeSrc = $("#embed_holder iframe").attr("src");
+
+    if (!iframeSrc) {
+      return res.status(404).json({ error: "Video tidak ditemukan" });
+    }
+
+    res.json({
+      video: iframeSrc,
+    });
+  } catch (err) {
+    console.error("Scraping error:", err);
+    res.status(500).json({ error: "Gagal mengambil link video" });
+  }
+});
+
+// biar bisa jalan di railway
+const PORT = process.env.PORT || 3000;
+app.listen(PORT, () => {
+  console.log(`Server running on port ${PORT}`);
+});
+
+
+//api zerochan web
 app.get("/api/zerochan/search", async (req, res) => {
   const query = req.query.q || "anime";
   const searchUrl = `https://www.zerochan.net/search?q=${encodeURIComponent(query)}`;
@@ -247,36 +243,31 @@ app.get("/api/zerochan/search", async (req, res) => {
   try {
     const browser = await puppeteer.launch({
       headless: true,
-      args: [
-        "--no-sandbox",
-        "--disable-setuid-sandbox",
-        "--disable-dev-shm-usage",
-        "--disable-accelerated-2d-canvas",
-        "--no-first-run",
-        "--no-zygote",
-        "--single-process",
-        "--disable-gpu"
-      ]
+      args: ["--no-sandbox", "--disable-setuid-sandbox"]
     });
 
     const page = await browser.newPage();
     await page.goto(searchUrl, { waitUntil: "domcontentloaded" });
 
+    // cek apakah redirect ke direct gallery
     const currentUrl = page.url();
+
     let data = [];
 
     if (!currentUrl.includes("/search")) {
+      // direct gallery page
       data = await page.evaluate(() =>
         Array.from(document.querySelectorAll(".thumb img")).map((img) => {
           const thumbnail = img.getAttribute("data-src") || img.src || "";
-          const link = img.parentElement?.getAttribute("href")
+          const link = img.parentElement?.getAttribute("href") 
             ? "https://www.zerochan.net" + img.parentElement.getAttribute("href")
             : "";
           const title = img.alt || "";
-          return { title, link, thumbnail, fav: 0 };
+          return { title, link, thumbnail, fav: 0 }; // fav tidak ada di gallery
         })
       );
     } else {
+      // normal search page
       data = await page.evaluate(() =>
         Array.from(document.querySelectorAll("#thumbs2 li")).map((el) => {
           const titleEl = el.querySelector("p a");
@@ -284,7 +275,9 @@ app.get("/api/zerochan/search", async (req, res) => {
           const favEl = el.querySelector(".fav b");
 
           const title = titleEl?.innerText.trim() || "";
-          const link = titleEl ? "https://www.zerochan.net" + titleEl.getAttribute("href") : "";
+          const link = titleEl
+            ? "https://www.zerochan.net" + titleEl.getAttribute("href")
+            : "";
           const thumbnail = imgEl?.getAttribute("data-src") || imgEl?.src || "";
           const fav = favEl ? parseInt(favEl.innerText.trim(), 10) : 0;
 
@@ -300,8 +293,11 @@ app.get("/api/zerochan/search", async (req, res) => {
   }
 });
 
-// ==========================
-// START SERVER (1x saja!)
-// ==========================
+
+
+
+
+
+
 const PORT = process.env.PORT || 3000;
-app.listen(PORT, () => console.log(`🚀 Server jalan di http://localhost:${PORT}`));
+app.listen(PORT, () => console.log(`Server jalan di http://localhost:${PORT}`));
