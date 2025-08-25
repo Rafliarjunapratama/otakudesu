@@ -163,20 +163,31 @@ app.get("/api/anime/detail", async (req, res) => {
       .trim();
 
     // Daftar episode
-    const episodeList = [];
-    $(".episodelist ul li").each((i, el) => {
-      let title = $(el).find("a").text().trim();
-      const tglEp = $(el).find(".zeebr").text().trim();
-      const linkEp = $(el).find("a").attr("href");
+   // Daftar episode
+const episodeList = [];
+$(".episodelist ul li").each((i, el) => {
+  let title = $(el).find("a").text().trim();
+  const tglEp = $(el).find(".zeebr").text().trim();
+  const linkEp = $(el).find("a").attr("href");
 
-      // skip batch
-      if (linkEp && linkEp.includes("/batch/")) return;
+  // skip batch dan episode lengkap
+  if (!linkEp || linkEp.includes("/batch/") || linkEp.includes("/lengkap/")) return;
 
-      // bersihkan judul
-      if (judul) {
-        const regex = new RegExp(judul, "gi");
-        title = title.replace(regex, "").trim();
-      }
+  // bersihkan judul
+  if (judul) {
+    const regex = new RegExp(judul, "gi");
+    title = title.replace(regex, "").trim();
+  }
+  title = title.replace(/Subtitle Indonesia/gi, "").trim();
+
+  // kalau ada "Episode X" pakai itu aja
+  const epMatch = title.match(/Episode\s*\d+/i);
+  if (epMatch) {
+    title = epMatch[0];
+  }
+
+  episodeList.push({ title, tanggal: tglEp, link: linkEp });
+});
       title = title.replace(/Subtitle Indonesia/gi, "").trim();
 
       // kalau ada "Episode X" pakai itu aja
