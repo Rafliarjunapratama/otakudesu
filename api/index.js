@@ -222,40 +222,32 @@ app.get("/api/zerochan/search", async (req, res) => {
   const url = `https://www.zerochan.net/search?q=${encodeURIComponent(query)}`;
 
   try {
-    const browser = await puppeteer.launch({
-      headless: true,
-      args: ["--no-sandbox", "--disable-setuid-sandbox"], // <-- penting!
+    const response = await fetch(url, {
+      headers: { "User-Agent": "Mozilla/5.0" },
+      timeout: 15000 // timeout 15 detik
     });
-    const page = await browser.newPage();
+    const html = await response.text();
+    const $ = cheerio.load(html);
 
-    await page.setUserAgent(
-      "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/119.0.0.0 Safari/537.36"
-    );
-    await page.goto(url, { waitUntil: "networkidle2" });
+    const data = $("#thumbs2 li").map((i, el) => {
+      const titleEl = $(el).find("p a");
+      const imgEl = $(el).find(".thumb img");
+      const favEl = $(el).find(".fav b");
 
-    const data = await page.evaluate(() => {
-      return Array.from(document.querySelectorAll("#thumbs2 li")).map((el) => {
-        const titleEl = el.querySelector("p a");
-        const imgEl = el.querySelector(".thumb img");
-        const favEl = el.querySelector(".fav b");
+      const title = titleEl.text().trim();
+      const link = "https://www.zerochan.net" + titleEl.attr("href");
+      const thumbnail = imgEl.attr("data-src") || imgEl.attr("src");
+      const fav = parseInt(favEl.text().trim(), 10) || 0;
 
-        const title = titleEl?.innerText.trim() || "";
-        const link = titleEl ? "https://www.zerochan.net" + titleEl.getAttribute("href") : "";
-        const thumbnail = imgEl?.getAttribute("data-src") || imgEl?.src || "";
-        const fav = favEl ? parseInt(favEl.innerText.trim(), 10) : 0;
+      return { title, link, thumbnail, fav };
+    }).get();
 
-        const cleanTitle = title.replace(/[:\-|"]/g, "").replace(/\s+/g, " ");
-
-        return { title: cleanTitle, link, thumbnail, fav };
-      });
-    });
-
-    await browser.close();
     res.json(data);
   } catch (err) {
     res.status(500).json({ error: "Gagal scraping Zerochan", detail: err.message });
   }
 });
+
 
 
 
