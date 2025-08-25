@@ -270,7 +270,7 @@ app.get("/api/zerochan/search", async (req, res) => {
 
 
 app.get("/api/zerochan/characters", async (req, res) => {
-  const query = req.query.q || "Kijin Gentoushou"; // default cari karakter dari series
+  const query = req.query.q || "Kijin Gentoushou";
   const url = `https://www.zerochan.net/${encodeURIComponent(query)}`;
 
   try {
@@ -285,7 +285,6 @@ app.get("/api/zerochan/characters", async (req, res) => {
     );
     await page.goto(url, { waitUntil: "networkidle2" });
 
-    // ambil character list
     const data = await page.evaluate(() => {
       return Array.from(document.querySelectorAll(".carousel.thumbs li")).map((el) => {
         const aEl = el.querySelector("a");
@@ -295,7 +294,11 @@ app.get("/api/zerochan/characters", async (req, res) => {
 
         const link = aEl ? "https://www.zerochan.net" + aEl.getAttribute("href") : "";
         const name = nameEl ? nameEl.innerText.trim() : "";
-        const thumbnail = imgEl ? imgEl.getAttribute("data-src") : "";
+        let thumbnail = "";
+        if (imgEl) {
+          thumbnail = imgEl.getAttribute("data-src") 
+            || imgEl.style.backgroundImage.replace(/url\(["']?(.*?)["']?\)/, "$1");
+        }
         const entries = countEl ? parseInt(countEl.innerText.trim(), 10) : 0;
 
         return { name, link, thumbnail, entries };
@@ -308,6 +311,7 @@ app.get("/api/zerochan/characters", async (req, res) => {
     res.status(500).json({ error: "Gagal scraping characters", detail: err.message });
   }
 });
+
 
 
 
