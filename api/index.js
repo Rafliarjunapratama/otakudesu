@@ -248,28 +248,30 @@ app.get("/api/zerochan/search", async (req, res) => {
     await page.goto(url, { waitUntil: "networkidle2" });
 
     const data = await page.evaluate(() => {
-      return Array.from(document.querySelectorAll("#thumbs2 li")).map((el) => {
-        const titleEl = el.querySelector("p a");
-        const imgEl = el.querySelector(".thumb img");
-        const favEl = el.querySelector(".fav b");
+      return Array.from(document.querySelectorAll("#children-grid li")).map((el) => {
+        const linkEl = el.querySelector("a.thumb");
+        const titleEl = el.querySelector("p.character b a");
 
-        const title = titleEl?.innerText.trim() || "";
-        const link = titleEl ? "https://www.zerochan.net" + titleEl.getAttribute("href") : "";
-        const thumbnail = imgEl?.getAttribute("data-src") || imgEl?.src || "";
-        const fav = favEl ? parseInt(favEl.innerText.trim(), 10) : 0;
+        const link = linkEl ? "https://www.zerochan.net" + linkEl.getAttribute("href") : "";
+        const name = titleEl?.innerText.trim() || "";
 
-        const cleanTitle = title.replace(/[:\-|"]/g, "").replace(/\s+/g, " ");
+        // ambil url dari background-image css
+        let thumbnail = "";
+        if (linkEl) {
+          const bg = linkEl.getAttribute("style") || "";
+          const match = bg.match(/url\((.*?)\)/);
+          if (match && match[1]) thumbnail = match[1].replace(/["']/g, "");
+        }
 
-        return { title: cleanTitle, link, thumbnail, fav };
+        return { name, link, thumbnail };
       });
     });
 
     await browser.close();
     res.json(data);
   } catch (err) {
-    res.status(500).json({ error: "Gagal scraping Zerochan", detail: err.message });
-  }
-});
+    res.status(500).json({ error: "Gagal scraping Zerochan", detail: err.mes
+
 
 
 
