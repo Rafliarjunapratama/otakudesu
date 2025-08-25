@@ -2,7 +2,6 @@ import express from "express";
 import fetch from "node-fetch";
 import * as cheerio from "cheerio";
 import cors from "cors";
-import { gotScraping } from "got-scraping";
 import puppeteer from "puppeteer";
 
 const app = express();
@@ -14,7 +13,9 @@ app.get("/", (req, res) => {
   res.redirect("/api/anime");
 });
 
-// API On-Going
+// ==========================
+// API On-Going Anime
+// ==========================
 app.get("/api/anime", async (req, res) => {
   try {
     const data = [];
@@ -33,8 +34,8 @@ app.get("/api/anime", async (req, res) => {
           link: $(el).find(".thumb a").attr("href"),
           thumbnail: $(el).find(".thumb img").attr("src"),
           judul: rawJudul
-          .replace(/[^a-zA-Z0-9\s]/g, "")
-          .replace(/\s+/g, " "),
+            .replace(/[^a-zA-Z0-9\s]/g, "")
+            .replace(/\s+/g, " "),
         });
       });
     }
@@ -44,7 +45,9 @@ app.get("/api/anime", async (req, res) => {
   }
 });
 
-// API Complete
+// ==========================
+// API Complete Anime
+// ==========================
 app.get("/api/anime/complete", async (req, res) => {
   try {
     const url = "https://otakudesu.best/complete-anime/";
@@ -72,48 +75,9 @@ app.get("/api/anime/complete", async (req, res) => {
   }
 });
 
-
-// API Complete by Page
-app.get("/api/anime/complete/page/:page", async (req, res) => {
-  try {
-    const page = req.params.page;
-    const url = `https://otakudesu.best/complete-anime/page/${page}/`;
-
-    const response = await fetch(url, {
-      headers: {
-        "User-Agent":
-          "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/114.0.0.0 Safari/537.36",
-      },
-    });
-    if (!response.ok) throw new Error(`Fetch gagal, status ${response.status}`);
-
-    const html = await response.text();
-    const $ = cheerio.load(html);
-
-    const data = [];
-    $("li .detpost").each((i, el) => {
-      const rawTitle = $(el).find(".thumb h2.jdlflm").text().trim();
-      data.push({
-        episode: $(el).find(".epz").text().trim(),
-        hari: $(el).find(".epztipe").text().trim(),
-        tanggal: $(el).find(".newnime").text().trim(),
-        link: $(el).find(".thumb a").attr("href"),
-        thumbnail: $(el).find(".thumb img").attr("src"),
-        judul: rawTitle
-          .replace(/[^a-zA-Z0-9\s]/g, "")
-          .replace(/\s+/g, " "),
-      });
-    });
-
-    res.json(data);
-  } catch (err) {
-    res.status(500).json({
-      error: "Gagal scraping complete anime",
-      detail: err.message,
-    });
-  }
-});
-
+// ==========================
+// API Anime Detail
+// ==========================
 app.get("/api/anime/detail", async (req, res) => {
   try {
     const { link } = req.query;
@@ -125,117 +89,62 @@ app.get("/api/anime/detail", async (req, res) => {
     const body = await response.text();
     const $ = cheerio.load(body);
 
-    // Judul
     const judul = $(".jdlrx").text().trim();
-
-    // Thumbnail (cek beberapa kemungkinan selector)
-    let thumbnail =
-      $(".fotoanime img").attr("src") ||
-      $(".fotoanime img").attr("data-src") ||
-      $(".thumb img").attr("src") ||
-      $(".thumb img").attr("data-src");
-
+    let thumbnail = $(".fotoanime img").attr("src") || $(".thumb img").attr("src");
     if (thumbnail) {
-      // hapus suffix -WxH hanya jika ada
       thumbnail = thumbnail.replace(/-\d+x\d+(?=\.(jpg|jpeg|png))/i, "");
     }
-
-    // Sinopsis
     const sinopsis = $(".sinopc").text().trim();
 
-    // Info tambahan
-    const episode = $(".infozingle p:contains('Episode')")
-      .text()
-      .replace("Episode:", "")
-      .trim();
-    const hari = $(".infozingle p:contains('Hari')")
-      .text()
-      .replace("Hari:", "")
-      .trim();
-    const tanggal = $(".infozingle p:contains('Tanggal')")
-      .text()
-      .replace("Tanggal:", "")
-      .trim();
+    const episodeList = [];
+    $(".episodelist ul li").each((i, el) => {
+      let title = $(el).find("a").text().trim();
+      const tanggal = $(el).find(".zeebr").text().trim();
+      const linkEp = $(el).find("a").attr("href");
 
-    // Daftar episode
- // Daftar episode
-const episodeList = [];
-$(".episodelist ul li").each((i, el) => {
-  let title = $(el).find("a").text().trim();
-  const tanggal = $(el).find(".zeebr").text().trim();
-  const linkEp = $(el).find("a").attr("href");
+      if (linkEp && linkEp.includes("/batch/")) return;
+      if (judul) {
+        const regex = new RegExp(judul, "gi");
+        title = title.replace(regex, "").trim();
+      }
+      title = title.replace(/Subtitle Indonesia/gi, "").trim();
 
-  // Hapus batch
-  if (linkEp && linkEp.includes("/batch/")) return;
+      const epMatch = title.match(/Episode\s*\d+/i);
+      if (epMatch) title = epMatch[0];
 
-  // Hapus kata "Subtitle Indonesia" dan nama anime dari judul
-  if (judul) {
-    const regex = new RegExp(judul, "gi");
-    title = title.replace(regex, "").trim();
-  }
-  title = title.replace(/Subtitle Indonesia/gi, "").trim();
-
-  // Tambahkan kata "Episode X" jika perlu
-  // Misal judul sekarang: "Episode 1" atau "Episode 12"
-  const epMatch = title.match(/Episode\s*\d+/i);
-  if (epMatch) {
-    title = epMatch[0]; // ambil hanya "Episode X"
-  }
-
-  episodeList.push({ title, tanggal, link: linkEp });
-});
-
-    res.json({
-      judul,
-      thumbnail,
-      sinopsis,
-      episode: episodeList,
-      info: { episode, hari, tanggal, link },
+      episodeList.push({ title, tanggal, link: linkEp });
     });
+
+    res.json({ judul, thumbnail, sinopsis, episode: episodeList, info: { link } });
   } catch (err) {
-    console.error("Scraping error:", err);
-    res.status(500).json({ error: "Gagal mengambil data anime" });
+    res.status(500).json({ error: "Gagal mengambil data anime", detail: err.message });
   }
 });
 
-
-//scraptvideo 
+// ==========================
+// API Detail Video
+// ==========================
 app.get("/api/anime/detail/video", async (req, res) => {
   try {
     const { link } = req.query;
-    if (!link) {
-      return res.status(400).json({ error: "Missing link" });
-    }
+    if (!link) return res.status(400).json({ error: "Missing link" });
 
-    // fetch halaman episode otakudesu
     const response = await fetch(link);
     const body = await response.text();
     const $ = cheerio.load(body);
 
-    // ambil iframe src
     const iframeSrc = $("#embed_holder iframe").attr("src");
+    if (!iframeSrc) return res.status(404).json({ error: "Video tidak ditemukan" });
 
-    if (!iframeSrc) {
-      return res.status(404).json({ error: "Video tidak ditemukan" });
-    }
-
-    res.json({
-      video: iframeSrc,
-    });
+    res.json({ video: iframeSrc });
   } catch (err) {
-    console.error("Scraping error:", err);
-    res.status(500).json({ error: "Gagal mengambil link video" });
+    res.status(500).json({ error: "Gagal mengambil link video", detail: err.message });
   }
 });
 
-// biar bisa jalan di railway
-const PORT = process.env.PORT || 3000;
-app.listen(PORT, () => {
-  console.log(`Server running on port ${PORT}`);
-});
-
-
-//api zerochan web
+// ==========================
+// API Zerochan Search
+// ==========================
 app.get("/api/zerochan/search", async (req, res) => {
   const query = req.query.q || "anime";
   const searchUrl = `https://www.zerochan.net/search?q=${encodeURIComponent(query)}`;
@@ -243,31 +152,36 @@ app.get("/api/zerochan/search", async (req, res) => {
   try {
     const browser = await puppeteer.launch({
       headless: true,
-      args: ["--no-sandbox", "--disable-setuid-sandbox"]
+      args: [
+        "--no-sandbox",
+        "--disable-setuid-sandbox",
+        "--disable-dev-shm-usage",
+        "--disable-accelerated-2d-canvas",
+        "--no-first-run",
+        "--no-zygote",
+        "--single-process",
+        "--disable-gpu"
+      ]
     });
 
     const page = await browser.newPage();
     await page.goto(searchUrl, { waitUntil: "domcontentloaded" });
 
-    // cek apakah redirect ke direct gallery
     const currentUrl = page.url();
-
     let data = [];
 
     if (!currentUrl.includes("/search")) {
-      // direct gallery page
       data = await page.evaluate(() =>
         Array.from(document.querySelectorAll(".thumb img")).map((img) => {
           const thumbnail = img.getAttribute("data-src") || img.src || "";
-          const link = img.parentElement?.getAttribute("href") 
+          const link = img.parentElement?.getAttribute("href")
             ? "https://www.zerochan.net" + img.parentElement.getAttribute("href")
             : "";
           const title = img.alt || "";
-          return { title, link, thumbnail, fav: 0 }; // fav tidak ada di gallery
+          return { title, link, thumbnail, fav: 0 };
         })
       );
     } else {
-      // normal search page
       data = await page.evaluate(() =>
         Array.from(document.querySelectorAll("#thumbs2 li")).map((el) => {
           const titleEl = el.querySelector("p a");
@@ -275,9 +189,7 @@ app.get("/api/zerochan/search", async (req, res) => {
           const favEl = el.querySelector(".fav b");
 
           const title = titleEl?.innerText.trim() || "";
-          const link = titleEl
-            ? "https://www.zerochan.net" + titleEl.getAttribute("href")
-            : "";
+          const link = titleEl ? "https://www.zerochan.net" + titleEl.getAttribute("href") : "";
           const thumbnail = imgEl?.getAttribute("data-src") || imgEl?.src || "";
           const fav = favEl ? parseInt(favEl.innerText.trim(), 10) : 0;
 
@@ -293,11 +205,8 @@ app.get("/api/zerochan/search", async (req, res) => {
   }
 });
 
-
-
-
-
-
-
+// ==========================
+// START SERVER (1x saja!)
+// ==========================
 const PORT = process.env.PORT || 3000;
-app.listen(PORT, () => console.log(`Server jalan di http://localhost:${PORT}`));
+app.listen(PORT, () => console.log(`🚀 Server jalan di http://localhost:${PORT}`));
