@@ -121,7 +121,13 @@ app.get("/api/anime/detail", async (req, res) => {
       return res.status(400).json({ error: "Missing link" });
     }
 
-    const response = await fetch(link);
+    const response = await fetch(link, {
+      headers: {
+        "User-Agent":
+          "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/114.0.0.0 Safari/537.36",
+      },
+    });
+    if (!response.ok) throw new Error(`Fetch gagal ${response.status}`);
     const body = await response.text();
     const $ = cheerio.load(body);
 
@@ -136,7 +142,6 @@ app.get("/api/anime/detail", async (req, res) => {
       $(".thumb img").attr("data-src");
 
     if (thumbnail) {
-      // hapus suffix -WxH hanya jika ada
       thumbnail = thumbnail.replace(/-\d+x\d+(?=\.(jpg|jpeg|png))/i, "");
     }
 
@@ -144,7 +149,7 @@ app.get("/api/anime/detail", async (req, res) => {
     const sinopsis = $(".sinopc").text().trim();
 
     // Info tambahan
-    const episode = $(".infozingle p:contains('Episode')")
+    const infoEpisode = $(".infozingle p:contains('Episode')")
       .text()
       .replace("Episode:", "")
       .trim();
@@ -158,63 +163,41 @@ app.get("/api/anime/detail", async (req, res) => {
       .trim();
 
     // Daftar episode
-    // Daftar episode
-    const episodeList = []; 
+    const episodeList = [];
     $(".episodelist ul li").each((i, el) => {
       let title = $(el).find("a").text().trim();
-      const tanggal = $(el).find(".zeebr").text().trim();
+      const tglEp = $(el).find(".zeebr").text().trim();
       const linkEp = $(el).find("a").attr("href");
 
-  // Hapus batch
-  if (linkEp && linkEp.includes("/batch/")) return;
+      // skip batch
+      if (linkEp && linkEp.includes("/batch/")) return;
 
-  // Hapus kata "Subtitle Indonesia" dan nama anime dari judul
-  if (judul) {
-    const regex = new RegExp(judul, "gi");
-    title = title.replace(regex, "").trim();
-  }
-  title = title.replace(/Subtitle Indonesia/gi, "").trim();
+      // bersihkan judul
+      if (judul) {
+        const regex = new RegExp(judul, "gi");
+        title = title.replace(regex, "").trim();
+      }
+      title = title.replace(/Subtitle Indonesia/gi, "").trim();
 
-  // Tambahkan kata "Episode X" jika perlu
-  // Misal judul sekarang: "Episode 1" atau "Episode 12"
-  const epMatch = title.match(/Episode\s*\d+/i);
-  if (epMatch) {
-    title = epMatch[0]; // ambil hanya "Episode X"
-  }
+      // kalau ada "Episode X" pakai itu aja
+      const epMatch = title.match(/Episode\s*\d+/i);
+      if (epMatch) {
+        title = epMatch[0];
+      }
 
-  episodeList.push({ title, tanggal, link: linkEp });
-});
-
-  // Hapus batch
-  if (linkEp && linkEp.includes("/batch/")) return;
-
-  // Hapus kata "Subtitle Indonesia" dan nama anime dari judul
-  if (judul) {
-    const regex = new RegExp(judul, "gi");
-    title = title.replace(regex, "").trim();
-  }
-  title = title.replace(/Subtitle Indonesia/gi, "").trim();
-
-  // Tambahkan kata "Episode X" jika perlu
-  // Misal judul sekarang: "Episode 1" atau "Episode 12"
-  const epMatch = title.match(/Episode\s*\d+/i);
-  if (epMatch) {
-    title = epMatch[0]; // ambil hanya "Episode X"
-  }
-
-  episodeList.push({ title, tanggal, link: linkEp });
-});
+      episodeList.push({ title, tanggal: tglEp, link: linkEp });
+    });
 
     res.json({
       judul,
       thumbnail,
       sinopsis,
       episode: episodeList,
-      info: { episode, hari, tanggal, link },
+      info: { episode: infoEpisode, hari, tanggal, link },
     });
   } catch (err) {
     console.error("Scraping error:", err);
-    res.status(500).json({ error: "Gagal mengambil data anime" });
+    res.status(500).json({ error: "Gagal mengambil data anime", detail: err.message });
   }
 });
 
