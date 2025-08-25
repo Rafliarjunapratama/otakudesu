@@ -79,6 +79,8 @@ app.get("/api/anime/complete", async (req, res) => {
 // API Anime Page
 // ==========================
 
+
+// API Complete by Page
 app.get("/api/anime/complete/page/:page", async (req, res) => {
   try {
     const page = req.params.page;
