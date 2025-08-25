@@ -257,23 +257,19 @@ app.get("/api/zerochan/characters", async (req, res) => {
   const url = `https://www.zerochan.net/${encodeURIComponent(query)}`;
 
   try {
+    // Pakai User-Agent mirip browser
     const response = await fetch(url, {
-      headers: {
-        "User-Agent":
-          "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/119.0.0.0 Safari/537.36",
-      },
+      headers: { "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64)" },
     });
 
-    if (!response.ok) {
-      throw new Error(`Fetch gagal dengan status ${response.status}`);
-    }
+    if (!response.ok) throw new Error(`Fetch gagal dengan status ${response.status}`);
 
     const html = await response.text();
     const $ = cheerio.load(html);
 
     const data = [];
-    $(".carousel.thumbs li").each((i, el) => {
-      if (i >= 20) return; // batasi hanya 20 karakter
+    $(".carousel.thumbs ul li").each((i, el) => {
+      if (i >= 20) return; // batasi max 20 karakter
 
       const aEl = $(el).find("a");
       const imgEl = $(el).find(".thumb");
@@ -282,14 +278,9 @@ app.get("/api/zerochan/characters", async (req, res) => {
 
       const link = aEl.length ? "https://www.zerochan.net" + aEl.attr("href") : "";
       const name = nameEl.length ? nameEl.text().trim() : "";
-      let thumbnail = "";
-
-      if (imgEl.length) {
-        const dataSrc = imgEl.attr("data-src");
-        const bgImage = imgEl.css("background-image")?.match(/url\(["']?(.*?)["']?\)/)?.[1];
-        thumbnail = dataSrc || bgImage || "";
-      }
-
+      const thumbnail = imgEl.length
+        ? imgEl.attr("data-src") || imgEl.css("background-image").match(/url\(["']?(.*?)["']?\)/)?.[1]
+        : "";
       const entries = countEl.length ? parseInt(countEl.text().trim(), 10) : 0;
 
       if (name) data.push({ name, link, thumbnail, entries });
@@ -300,7 +291,6 @@ app.get("/api/zerochan/characters", async (req, res) => {
     res.status(500).json({ error: "Gagal scraping characters", detail: err.message });
   }
 });
-
 
 
 
