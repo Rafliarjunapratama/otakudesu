@@ -300,58 +300,66 @@ app.get("/api/anime/search", async (req, res) => {
   const query = req.query.q || "watanare";
   const filter = req.query.q_filter || "anime";
   const searchUrl = `https://otakotaku.com/anime/search?q=${encodeURIComponent(query)}&q_filter=${filter}`;
+  const headers = { "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64)" };
 
   try {
     // 1. Ambil hasil search
-    const searchResp = await fetch(searchUrl);
+    const searchResp = await fetch(searchUrl, { headers });
     const searchHtml = await searchResp.text();
     const $ = cheerio.load(searchHtml);
 
-    // Ambil anime pertama
     const firstAnimeEl = $(".anime-list").first();
+    if (!firstAnimeEl.length) {
+      return res.status(404).json({ error: "Anime tidak ditemukan" });
+    }
+
     const title = firstAnimeEl.find(".anime-title a").text().trim();
     const link = firstAnimeEl.find(".anime-title a").attr("href");
+    if (!link) {
+      return res.status(404).json({ error: "Link anime kosong" });
+    }
 
-    // Bersihkan URL thumbnail untuk anime
     const imgRaw = firstAnimeEl.find(".anime-img img").attr("src") || firstAnimeEl.find(".anime-img img").attr("data-src");
-    const img = imgRaw.replace(/\/thumb\/\d+x\d+\//, "/");
-
+    const img = imgRaw ? imgRaw.replace(/\/thumb\/\d+x\d+\//, "/") : null;
     const sinopsis = firstAnimeEl.find(".sinopsis-anime").text().trim();
     const tipe = firstAnimeEl.find("table tr:nth-child(1) td:nth-child(2) a").text().trim();
     const eps = firstAnimeEl.find("table tr:nth-child(2) td:nth-child(2)").text().trim();
     const musim = firstAnimeEl.find("table tr:nth-child(3) td:nth-child(2) a").text().trim();
 
     // 2. Ambil skor anime
-    const animePageResp = await fetch(link);
-    const animePageHtml = await animePageResp.text();
-    const $$ = cheerio.load(animePageHtml);
-    const skor = $$(".skor_anime").first().text().trim();
+    let skor = null;
+    try {
+      const animePageResp = await fetch(link, { headers });
+      const animePageHtml = await animePageResp.text();
+      const $$ = cheerio.load(animePageHtml);
+      skor = $$(".skor_anime").first().text().trim();
+    } catch (err) {
+      console.error("Gagal fetch halaman anime:", err);
+    }
 
-    // 3. Ambil karakter dari halaman character
+    // 3. Ambil karakter
     const characterLink = link.replace("/view/", "/character/");
-    const charResp = await fetch(characterLink);
-    const charHtml = await charResp.text();
-    const $$$ = cheerio.load(charHtml);
-
     const characters = [];
-    $$$(".anime-char-list").each((i, el) => {
-      const charName = $(el).find(".char-name a").text().trim();
-      const charLink = $(el).find(".char-name a").attr("href");
+    try {
+      const charResp = await fetch(characterLink, { headers });
+      const charHtml = await charResp.text();
+      const $$$ = cheerio.load(charHtml);
 
-      // Bersihkan URL thumbnail karakter
-      const charImgRaw = $(el).find(".char-img img").attr("src") || $(el).find(".char-img img").attr("data-src");
-      const charImg = charImgRaw.replace(/\/thumb\/\d+x\d+\//, "/");
+      $$$(".anime-char-list").each((i, el) => {
+        const charName = $(el).find(".char-name a").text().trim();
+        const charLink = $(el).find(".char-name a").attr("href");
+        const charImg = $(el).find(".char-img img").attr("src") || $(el).find(".char-img img").attr("data-src");
+        const charType = $(el).find(".char-jenis-karakter small").text().trim();
+        const seiyuuName = $(el).find(".char-seiyuu-list a").text().trim();
+        const seiyuuLink = $(el).find(".char-seiyuu-list a").attr("href");
+        const seiyuuImgRaw = $(el).find(".seiyuu-img img").attr("src") || $(el).find(".seiyuu-img img").attr("data-src");
+        const seiyuuImg = seiyuuImgRaw ? seiyuuImgRaw.replace(/\/thumb\/\d+x\d+\//, "/") : null;
 
-      const charType = $(el).find(".char-jenis-karakter small").text().trim();
-      const seiyuuName = $(el).find(".char-seiyuu-list a").text().trim();
-      const seiyuuLink = $(el).find(".char-seiyuu-list a").attr("href");
-
-      // Bersihkan URL thumbnail seiyuu
-      const seiyuuImgRaw = $(el).find(".seiyuu-img img").attr("src") || $(el).find(".seiyuu-img img").attr("data-src");
-      const seiyuuImg = seiyuuImgRaw.replace(/\/thumb\/\d+x\d+\//, "/");
-
-      characters.push({ charName, charLink, charImg, charType, seiyuuName, seiyuuLink, seiyuuImg });
-    });
+        characters.push({ charName, charLink, charImg, charType, seiyuuName, seiyuuLink, seiyuuImg });
+      });
+    } catch (err) {
+      console.error("Gagal fetch halaman karakter:", err);
+    }
 
     res.json({
       query,
