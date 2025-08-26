@@ -266,7 +266,11 @@ app.get("/api/zerochan/characters", async (req, res) => {
     await page.setUserAgent(
       "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/119.0.0.0 Safari/537.36"
     );
-    await page.goto(url, { waitUntil: "networkidle2" });
+
+    await page.goto(url, { waitUntil: "domcontentloaded" });
+
+    // Tunggu sampai carousel muncul
+    await page.waitForSelector(".carousel.thumbs li", { timeout: 10000 });
 
     const data = await page.evaluate(() => {
       return Array.from(document.querySelectorAll(".carousel.thumbs li")).map((el) => {
@@ -278,10 +282,13 @@ app.get("/api/zerochan/characters", async (req, res) => {
         const link = aEl ? "https://www.zerochan.net" + aEl.getAttribute("href") : "";
         const name = nameEl ? nameEl.innerText.trim() : "";
         let thumbnail = "";
+
         if (imgEl) {
+          const bg = imgEl.style.backgroundImage || "";
           thumbnail = imgEl.getAttribute("data-src") 
-            || imgEl.style.backgroundImage.replace(/url\(["']?(.*?)["']?\)/, "$1");
+            || (bg ? bg.replace(/url\(["']?(.*?)["']?\)/, "$1") : "");
         }
+
         const entries = countEl ? parseInt(countEl.innerText.trim(), 10) : 0;
 
         return { name, link, thumbnail, entries };
@@ -296,7 +303,8 @@ app.get("/api/zerochan/characters", async (req, res) => {
 });
 
 
-app.get("/api/anime/search", async (req, res) => {
+
+app.get("/api/anime/otakotaku/search", async (req, res) => {
   const query = req.query.q || "watanare";
   const filter = req.query.q_filter || "anime";
   const searchUrl = `https://otakotaku.com/anime/search?q=${encodeURIComponent(query)}&q_filter=${filter}`;
