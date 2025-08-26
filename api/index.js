@@ -345,17 +345,19 @@ app.get("/api/anime/search", async (req, res) => {
       const charHtml = await charResp.text();
       const $$$ = cheerio.load(charHtml);
 
-      // selector terbaru Otakotaku
-      $$$(".anime-char-list .char-item").each((i, el) => {
-        const $el = $$$(el);
-        const charName = $el.find(".char-name a").text().trim();
-        const charLink = $el.find(".char-name a").attr("href");
-        const charImgRaw = $el.find(".char-img img").attr("src") || $el.find(".char-img img").attr("data-src");
-        const charImg = charImgRaw ? charImgRaw.replace(/\/thumb\/\d+x\d+\//, "/") : null;
-        const charType = $el.find(".char-jenis-karakter small").text().trim();
-        const seiyuuName = $el.find(".char-seiyuu-list a").text().trim();
-        const seiyuuLink = $el.find(".char-seiyuu-list a").attr("href");
-        const seiyuuImgRaw = $el.find(".seiyuu-img img").attr("src") || $el.find(".seiyuu-img img").attr("data-src");
+      $$$(".anime-char-list").each((i, el) => {
+   const charName = $(el).find(".char-name a").text().trim();
+const charLink = $(el).find(".char-name a").attr("href");
+
+// Ambil gambar karakter dan hapus 'thumb/52x71/' agar menjadi full image
+const charImgRaw = $(el).find(".char-img img").attr("src") || $(el).find(".char-img img").attr("data-src");
+const charImg = charImgRaw.replace(/\/thumb\/\d+x\d+\//, "/");
+
+const charType = $(el).find(".char-jenis-karakter small").text().trim();
+
+        const seiyuuName = $(el).find(".char-seiyuu-list a").text().trim();
+        const seiyuuLink = $(el).find(".char-seiyuu-list a").attr("href");
+        const seiyuuImgRaw = $(el).find(".seiyuu-img img").attr("src") || $(el).find(".seiyuu-img img").attr("data-src");
         const seiyuuImg = seiyuuImgRaw ? seiyuuImgRaw.replace(/\/thumb\/\d+x\d+\//, "/") : null;
 
         characters.push({ charName, charLink, charImg, charType, seiyuuName, seiyuuLink, seiyuuImg });
