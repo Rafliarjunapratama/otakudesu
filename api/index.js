@@ -311,8 +311,11 @@ app.get("/api/anime/search", async (req, res) => {
     const firstAnimeEl = $(".anime-list").first();
     const title = firstAnimeEl.find(".anime-title a").text().trim();
     const link = firstAnimeEl.find(".anime-title a").attr("href");
+
+    // Bersihkan URL thumbnail untuk anime
     const imgRaw = firstAnimeEl.find(".anime-img img").attr("src") || firstAnimeEl.find(".anime-img img").attr("data-src");
     const img = imgRaw.replace(/\/thumb\/\d+x\d+\//, "/");
+
     const sinopsis = firstAnimeEl.find(".sinopsis-anime").text().trim();
     const tipe = firstAnimeEl.find("table tr:nth-child(1) td:nth-child(2) a").text().trim();
     const eps = firstAnimeEl.find("table tr:nth-child(2) td:nth-child(2)").text().trim();
@@ -334,22 +337,34 @@ app.get("/api/anime/search", async (req, res) => {
     $$$(".anime-char-list").each((i, el) => {
       const charName = $(el).find(".char-name a").text().trim();
       const charLink = $(el).find(".char-name a").attr("href");
-      const charImg = $(el).find(".char-img img").attr("src") || $(el).find(".char-img img").attr("data-src");
+
+      // Bersihkan URL thumbnail karakter
+      const charImgRaw = $(el).find(".char-img img").attr("src") || $(el).find(".char-img img").attr("data-src");
+      const charImg = charImgRaw.replace(/\/thumb\/\d+x\d+\//, "/");
+
       const charType = $(el).find(".char-jenis-karakter small").text().trim();
       const seiyuuName = $(el).find(".char-seiyuu-list a").text().trim();
       const seiyuuLink = $(el).find(".char-seiyuu-list a").attr("href");
+
+      // Bersihkan URL thumbnail seiyuu
       const seiyuuImgRaw = $(el).find(".seiyuu-img img").attr("src") || $(el).find(".seiyuu-img img").attr("data-src");
       const seiyuuImg = seiyuuImgRaw.replace(/\/thumb\/\d+x\d+\//, "/");
 
       characters.push({ charName, charLink, charImg, charType, seiyuuName, seiyuuLink, seiyuuImg });
     });
 
-    res.json({ query, filter, anime: { title, link, img, sinopsis, tipe, eps, musim, skor, characterLink, characters } });
+    res.json({
+      query,
+      filter,
+      anime: { title, link, img, sinopsis, tipe, eps, musim, skor, characterLink, characters }
+    });
+
   } catch (err) {
     console.error(err);
     res.status(500).json({ error: "Gagal mengambil data" });
   }
 });
+
 
 
 
