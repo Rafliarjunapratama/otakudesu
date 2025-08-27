@@ -2,6 +2,8 @@
 
 Merunime adalah REST API berbasis **Node.js + Express** yang digunakan untuk melakukan scraping data dari berbagai sumber anime, seperti **Otakudesu**, **Zerochan**, dan **Otakotaku**.  
 Tujuan API ini adalah untuk mempermudah akses data anime, gambar, dan karakter untuk project pribadi.
+- 🔗 [Website Scraper](https://otakudesu-apifree.up.railway.app/)  
+- 📂 [Github Merunime](https://github.com/Rafliarjunapratama/merunime/)  
 
 ⚠️ **Disclaimer**:  
 API ini hanya untuk **pembelajaran**. Semua hak cipta konten dimiliki oleh situs aslinya. Jangan gunakan untuk tujuan komersial.
