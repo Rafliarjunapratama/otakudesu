@@ -27,3 +27,8 @@ API ini hanya untuk **pembelajaran**. Semua hak cipta konten dimiliki oleh situs
    ```bash
    git clone https://github.com/Rafliarjunapratama/merunime.git
    cd merunime
+
+## ⚠️ Disclaimer Akhir
+Proyek ini hanya untuk **latihan coding & pembelajaran teknis** (scraping, API, frontend, backend).  
+**Tidak ada distribusi, monetisasi, atau niat melanggar hak cipta.**  
+Jika menyukai karya asli, **dukung kreator dan platform resmi**.
